@@ -18,11 +18,42 @@ import { StatusBar } from 'expo-status-bar';
 const BACKEND_URL = 'http://localhost:7000';
 const GOOGLE_CLIENT_ID = '258416843143-ahnf9rasq8blnra0gcq7rr5cn77s9qsd.apps.googleusercontent.com';
 
+// Warm Editorial Theme Palette matching TripSaathi Recovery Story
+const THEME = {
+  bg: '#FAF6F0',                 // Warm cream / ivory canvas
+  bgAlt: '#F3EDE4',              // Secondary warm cream
+  paper: '#FFFFFF',              // Pure white paper card
+  paperSubtle: '#FAF7F2',        // Soft cream tint
+  border: '#E5DFD5',             // Warm delicate hairline border
+  borderDark: '#D6CFC3',         // Structured border
+  
+  primary: '#A83827',            // Burnt terracotta / brick red
+  primaryHover: '#8E2E1F',       // Deep terracotta
+  primaryLight: 'rgba(168, 56, 39, 0.08)',
+  primaryBorder: 'rgba(168, 56, 39, 0.3)',
+  
+  text: '#1E1B18',               // Deep charcoal / espresso
+  textSecondary: '#6E675F',      // Warm slate / stone
+  textMuted: '#9B9389',          // Muted taupe
+  
+  green: '#2E6F40',              // Sage green (On Time / Confirmed / Low)
+  greenBg: 'rgba(46, 111, 64, 0.1)',
+  
+  amber: '#C25E1A',              // Burnt ochre (At Risk / Medium)
+  amberBg: 'rgba(194, 94, 26, 0.1)',
+};
+
+const SERIF_FONT = Platform.select({
+  web: "'Playfair Display', Georgia, 'Times New Roman', serif",
+  default: 'serif',
+});
+
 export default function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'ADD' | 'DASH' | 'IMPACT' | 'RECOVERY' | 'TRACKER'
 
   // Profile Form State
   const [name, setName] = useState('');
@@ -63,7 +94,7 @@ export default function App() {
       if (btnParent) {
         btnParent.innerHTML = '';
         window.google.accounts.id.renderButton(btnParent, {
-          theme: 'filled_blue',
+          theme: 'outline',
           size: 'large',
           text: 'signin_with',
           shape: 'rectangular',
@@ -73,13 +104,11 @@ export default function App() {
     }
   };
 
-  // Callback when Google Sign-In succeeds
   const handleGoogleCredentialResponse = async (response) => {
     if (!response || !response.credential) return;
     await exchangeGoogleTokenWithBackend(response.credential);
   };
 
-  // Sends Google ID Token to FastAPI backend (/auth/google)
   const exchangeGoogleTokenWithBackend = async (googleJwt) => {
     setLoading(true);
     try {
@@ -92,7 +121,6 @@ export default function App() {
       if (res.ok && data.access_token) {
         setToken(data.access_token);
         setUser(data.user);
-        // Load full user profile from backend
         await fetchUserProfile(data.access_token);
       } else {
         alertError(data.detail || 'Authentication failed');
@@ -104,7 +132,6 @@ export default function App() {
     }
   };
 
-  // Fetch user profile from /user/profile
   const fetchUserProfile = async (jwtToken) => {
     try {
       const res = await fetch(`${BACKEND_URL}/user/profile`, {
@@ -126,7 +153,6 @@ export default function App() {
     }
   };
 
-  // Calculate age automatically on DOB change
   const handleDobChange = (text) => {
     setDob(text);
     if (text.length >= 8) {
@@ -143,7 +169,6 @@ export default function App() {
     setCalculatedAge(null);
   };
 
-  // Save profile to /user/profile (PUT)
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     setSaveMessage(null);
@@ -188,7 +213,7 @@ export default function App() {
     if (Platform.OS === 'web') {
       window.alert(msg);
     } else {
-      Alert.alert('Error', msg);
+      Alert.alert('Notice', msg);
     }
   };
 
@@ -196,157 +221,424 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
-      {/* TOP HEADER */}
+      {/* TOP EDITORIAL HEADER */}
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <Text style={styles.brandEmoji}>✈️</Text>
-          <Text style={styles.brandText}>TripSaathi</Text>
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>AI Travel</Text>
+          <Text style={styles.brandTitle}>TripSaathi</Text>
+          <View style={styles.kickerBadge}>
+            <Text style={styles.kickerBadgeText}>CONNECTED TRAVEL RECOVERY</Text>
           </View>
         </View>
 
-        {user && (
-          <TouchableOpacity
-            style={styles.avatarTouchable}
-            onPress={() => setProfileModalVisible(true)}
-            activeOpacity={0.8}
-          >
-            {user.profile_pic ? (
-              <Image source={{ uri: user.profile_pic }} style={styles.avatarImg} />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarFallbackText}>
-                  {user.name ? user.name[0].toUpperCase() : 'U'}
-                </Text>
-              </View>
-            )}
-            <View style={styles.onlineDot} />
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerRight}>
+          {user ? (
+            <TouchableOpacity
+              style={styles.avatarTouchable}
+              onPress={() => setProfileModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              {user.profile_pic ? (
+                <Image source={{ uri: user.profile_pic }} style={styles.avatarImg} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarFallbackText}>
+                    {user.name ? user.name[0].toUpperCase() : 'U'}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.onlineDot} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.headerSignInBtn}
+              onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
+            >
+              <Text style={styles.headerSignInBtnText}>⚡ Dev Sign In</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* LOGGED OUT STATE */}
-        {!token ? (
-          <View style={styles.authContainer}>
-            <View style={styles.heroBox}>
-              <Text style={styles.heroTitle}>Your AI Travel Companion</Text>
-              <Text style={styles.heroSubtitle}>
-                Discover flights, compare airline cancellation rules, and automate your travel itinerary seamlessly.
+        {/* EDITORIAL HERO SECTION */}
+        <View style={styles.heroSection}>
+          <Text style={styles.heroKicker}>AI-ASSISTED RECOVERY FOR CONNECTED TRAVEL</Text>
+          <Text style={styles.heroTitle}>
+            A credible MVP,{'\n'}not a promise to automate everything.
+          </Text>
+          <View style={styles.terracottaBar} />
+          <Text style={styles.heroSubtitle}>
+            When a journey breaks, help the whole trip recover. One disruption triggers a downstream chain reaction — we detect changes, validate rules, and empower you to decide.
+          </Text>
+        </View>
+
+        {/* PROFILE COMPLETION BANNER (IF LOGGED IN AND MISSING FIELDS) */}
+        {user && isProfileIncomplete && (
+          <View style={styles.promptBanner}>
+            <Text style={styles.promptIcon}>⚠️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.promptTitle}>Complete your traveler profile</Text>
+              <Text style={styles.promptDesc}>
+                Add your phone number, date of birth, and home city so recovery options can auto-align with your trip.
               </Text>
             </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardHeader}>Sign in to TripSaathi</Text>
-              <Text style={styles.cardSub}>Sign in with Google to manage your bookings and profile.</Text>
-
-              {loading ? (
-                <ActivityIndicator size="large" color="#0284c7" style={{ marginVertical: 20 }} />
-              ) : (
-                <View style={styles.loginActionsContainer}>
-                  {/* Web Official Google Button Container */}
-                  <View id="googleSignInBtn" style={styles.googleBtnContainer} />
-
-                  {/* Fallback & Quick Test login button */}
-                  <TouchableOpacity
-                    style={styles.quickDevBtn}
-                    onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
-                  >
-                    <Text style={styles.quickDevBtnText}>⚡ Fast Test Login (Developer Mode)</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+            <TouchableOpacity
+              style={styles.promptActionBtn}
+              onPress={() => setProfileModalVisible(true)}
+            >
+              <Text style={styles.promptActionBtnText}>Edit Profile</Text>
+            </TouchableOpacity>
           </View>
-        ) : (
-          /* LOGGED IN DASHBOARD */
-          <View style={styles.dashboardContainer}>
-            {/* User Greeting Card */}
-            <View style={styles.welcomeCard}>
-              <View style={styles.welcomeInfo}>
-                <Text style={styles.welcomeTitle}>Welcome, {user?.name || 'Explorer'}!</Text>
-                <Text style={styles.welcomeEmail}>{user?.email}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.viewProfileBtn}
-                onPress={() => setProfileModalVisible(true)}
-              >
-                <Text style={styles.viewProfileBtnText}>View Profile 👤</Text>
-              </TouchableOpacity>
-            </View>
+        )}
 
-            {/* Profile Completion Prompt */}
-            {isProfileIncomplete && (
-              <View style={styles.promptBanner}>
-                <Text style={styles.promptIcon}>ℹ️</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.promptTitle}>Complete your traveler profile</Text>
-                  <Text style={styles.promptDesc}>
-                    Add your phone number, date of birth, and home city for automated flight booking.
-                  </Text>
-                </View>
+        {/* LOGGED IN USER STATUS BAR */}
+        {user && (
+          <View style={styles.userStatusBar}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.userStatusGreeting}>Signed in as {user.name || user.email}</Text>
+              <Text style={styles.userStatusSub}>Click your avatar anytime to view & edit your profile details.</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.userStatusEditBtn}
+              onPress={() => setProfileModalVisible(true)}
+            >
+              <Text style={styles.userStatusEditBtnText}>View Profile 👤</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* GOOGLE SIGN IN CARD (SHOWN WHEN LOGGED OUT) */}
+        {!token && (
+          <View style={styles.authCard}>
+            <Text style={styles.authCardKicker}>AUTHENTICATION</Text>
+            <Text style={styles.authCardTitle}>Sign in to TripSaathi</Text>
+            <Text style={styles.authCardSub}>
+              Connect with Google to securely store your trip records, manage downstream bookings, and sync profile recovery preferences.
+            </Text>
+
+            {loading ? (
+              <ActivityIndicator size="large" color={THEME.primary} style={{ marginVertical: 20 }} />
+            ) : (
+              <View style={styles.loginActionsContainer}>
+                {/* Official Google GIS Button placeholder */}
+                <View id="googleSignInBtn" style={styles.googleBtnContainer} />
+
+                {/* Developer Fast Login */}
                 <TouchableOpacity
-                  style={styles.promptActionBtn}
-                  onPress={() => setProfileModalVisible(true)}
+                  style={styles.quickDevBtn}
+                  onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
                 >
-                  <Text style={styles.promptActionBtnText}>Edit</Text>
+                  <Text style={styles.quickDevBtnText}>⚡ One-Tap Fast Sign In (Developer Mode)</Text>
                 </TouchableOpacity>
               </View>
             )}
+          </View>
+        )}
 
-            {/* Feature Cards Grid */}
-            <Text style={styles.sectionHeading}>Travel Intelligence Hub</Text>
-            <View style={styles.grid}>
-              <View style={styles.featureCard}>
-                <Text style={styles.featureEmoji}>🛫</Text>
-                <Text style={styles.featureTitle}>Flight Search</Text>
-                <Text style={styles.featureDesc}>
-                  Autonomous Mako AI agent searches lowest fares across IndiGo, Air India, & major airlines.
+        {/* INTERACTIVE NAVIGATION TABS */}
+        <View style={styles.tabContainer}>
+          {[
+            { id: 'ALL', label: 'All Screens' },
+            { id: 'ADD', label: 'Add Trip' },
+            { id: 'DASH', label: 'Trip Dashboard' },
+            { id: 'IMPACT', label: 'Impact View' },
+            { id: 'RECOVERY', label: 'Recovery Plans' },
+            { id: 'TRACKER', label: 'Action Tracker' },
+          ].map((tab) => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tabBtn, activeTab === tab.id && styles.tabBtnActive]}
+              onPress={() => setActiveTab(tab.id)}
+            >
+              <Text style={[styles.tabBtnText, activeTab === tab.id && styles.tabBtnTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* FLOWS CONTAINER (MOCKUP CARDS IN NEW THEME) */}
+        <View style={styles.flowLayout}>
+          <ScrollView
+            horizontal={activeTab === 'ALL'}
+            showsHorizontalScrollIndicator={true}
+            contentContainerStyle={styles.flowRow}
+          >
+            {/* 1. ADD TRIP SCREEN */}
+            {(activeTab === 'ALL' || activeTab === 'ADD') && (
+              <View style={styles.phoneScreenContainer}>
+                <Text style={styles.screenLabel}>ADD TRIP</Text>
+                <View style={styles.phoneMockup}>
+                  <View style={styles.screenHeader}>
+                    <Text style={styles.backArrow}>←</Text>
+                    <Text style={styles.screenHeaderTitle}>Add Trip</Text>
+                  </View>
+
+                  <View style={styles.inputRow}>
+                    <Text style={styles.inputPrefix}>From</Text>
+                    <View style={styles.inputFieldMock}>
+                      <Text style={styles.inputAirportCode}>DEL</Text>
+                      <Text style={styles.inputCityName}>New Delhi</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputRow}>
+                    <Text style={styles.inputPrefix}>To</Text>
+                    <View style={styles.inputFieldMock}>
+                      <Text style={styles.inputAirportCode}>BOM</Text>
+                      <Text style={styles.inputCityName}>Mumbai</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputRow}>
+                    <Text style={styles.inputPrefix}>Date</Text>
+                    <View style={styles.inputFieldMock}>
+                      <Text style={styles.inputDateText}>24 May 2025</Text>
+                      <Text style={styles.calendarIcon}>📅</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputRow}>
+                    <Text style={styles.inputPrefix}>Passengers</Text>
+                    <View style={styles.inputFieldMock}>
+                      <Text style={styles.inputDateText}>1</Text>
+                      <Text style={styles.chevronIcon}>›</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity style={styles.terracottaBtn} activeOpacity={0.85}>
+                    <Text style={styles.terracottaBtnText}>Add Trip</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* ARROW CONNECTOR */}
+            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
+
+            {/* 2. TRIP DASHBOARD SCREEN */}
+            {(activeTab === 'ALL' || activeTab === 'DASH') && (
+              <View style={styles.phoneScreenContainer}>
+                <Text style={styles.screenLabel}>TRIP DASHBOARD</Text>
+                <View style={styles.phoneMockup}>
+                  <Text style={styles.dashboardTitle}>Trip Dashboard</Text>
+                  
+                  {/* Subtabs */}
+                  <View style={styles.dashboardSubtabs}>
+                    <Text style={[styles.subtabItem, styles.subtabItemActive]}>Overview</Text>
+                    <Text style={styles.subtabItem}>Updates</Text>
+                    <Text style={styles.subtabItem}>Alerts</Text>
+                  </View>
+
+                  <Text style={styles.routeHeader}>Delhi → Mumbai</Text>
+                  <Text style={styles.routeDate}>24 May 2025</Text>
+
+                  {/* Segments */}
+                  <View style={styles.segmentList}>
+                    <View style={styles.segmentItem}>
+                      <Text style={styles.segmentIcon}>✈️</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.segmentName}>Flight</Text>
+                      </View>
+                      <Text style={styles.tagGreen}>On Time</Text>
+                    </View>
+
+                    <View style={styles.segmentItem}>
+                      <Text style={styles.segmentIcon}>🚆</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.segmentName}>Rail</Text>
+                        <Text style={styles.segmentMeta}>ID: 146aved</Text>
+                      </View>
+                      <Text style={styles.tagAmber}>At Risk</Text>
+                    </View>
+
+                    <View style={styles.segmentItem}>
+                      <Text style={styles.segmentIcon}>🏨</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.segmentName}>Hotel</Text>
+                      </View>
+                      <Text style={styles.tagGreen}>Confirmed</Text>
+                    </View>
+
+                    <View style={styles.segmentItem}>
+                      <Text style={styles.segmentIcon}>🚗</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.segmentName}>Ground Transfer</Text>
+                      </View>
+                      <Text style={styles.tagMuted}>Scheduled</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* ARROW CONNECTOR */}
+            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
+
+            {/* 3. IMPACT VIEW SCREEN */}
+            {(activeTab === 'ALL' || activeTab === 'IMPACT') && (
+              <View style={styles.phoneScreenContainer}>
+                <Text style={styles.screenLabel}>IMPACT VIEW</Text>
+                <View style={styles.phoneMockup}>
+                  <Text style={styles.impactTitle}>Impact View</Text>
+                  <Text style={styles.impactSub}>What Check-in affected</Text>
+
+                  {/* Delay Hero Box */}
+                  <View style={styles.delayBox}>
+                    <Text style={styles.delayBoxLabel}>Likely Delay</Text>
+                    <Text style={styles.delayBoxHero}>2h 30m</Text>
+                    <Text style={styles.delayBoxLocation}>Arrival in Mumbai</Text>
+                  </View>
+
+                  <View style={styles.impactItemList}>
+                    <View style={styles.impactRow}>
+                      <Text style={styles.impactRowLabel}>Hotel Check-in</Text>
+                      <Text style={styles.tagAmber}>At Risk</Text>
+                    </View>
+
+                    <View style={styles.impactRow}>
+                      <Text style={styles.impactRowLabel}>Evening Activity</Text>
+                      <Text style={styles.tagAmber}>At Risk</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* ARROW CONNECTOR */}
+            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
+
+            {/* 4. RECOVERY PLANS SCREEN */}
+            {(activeTab === 'ALL' || activeTab === 'RECOVERY') && (
+              <View style={styles.phoneScreenContainer}>
+                <Text style={styles.screenLabel}>RECOVERY PLANS</Text>
+                <View style={styles.phoneMockup}>
+                  <Text style={styles.recoveryTitle}>Recovery Plans</Text>
+                  <Text style={styles.recoverySub}>Recommended options</Text>
+
+                  <View style={styles.optionBox}>
+                    <Text style={styles.optionHeader}>Option 1</Text>
+                    <Text style={styles.optionAction}>Hold hotel check-in</Text>
+                    <View style={styles.optionMetaRow}>
+                      <Text style={styles.optionTime}>2:00 PM</Text>
+                      <Text style={styles.optionImpactGreen}>Impact: Low</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.optionBox}>
+                    <Text style={styles.optionHeader}>Option 2</Text>
+                    <Text style={styles.optionAction}>Alternative activity</Text>
+                    <View style={styles.optionMetaRow}>
+                      <Text style={styles.optionTime}>6:00 PM</Text>
+                      <Text style={styles.optionImpactAmber}>Impact: Medium</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.optionBox}>
+                    <Text style={styles.optionHeader}>Option 3</Text>
+                    <Text style={styles.optionAction}>Early check-in request</Text>
+                    <View style={styles.optionMetaRow}>
+                      <Text style={styles.optionTime}>12:00 PM</Text>
+                      <Text style={styles.optionImpactGreen}>Impact: Low</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* ARROW CONNECTOR */}
+            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
+
+            {/* 5. ACTION TRACKER SCREEN */}
+            {(activeTab === 'ALL' || activeTab === 'TRACKER') && (
+              <View style={styles.phoneScreenContainer}>
+                <Text style={styles.screenLabel}>ACTION TRACKER</Text>
+                <View style={styles.phoneMockup}>
+                  <Text style={styles.trackerTitle}>Action Tracker</Text>
+                  <Text style={styles.trackerSub}>Stay on top of what matters</Text>
+
+                  <View style={styles.trackerSection}>
+                    <Text style={styles.trackerCategory}>To Do</Text>
+                    <Text style={styles.trackerItem}>• Contact hotel</Text>
+                    <Text style={styles.trackerItem}>• Request early check-in</Text>
+                  </View>
+
+                  <View style={styles.trackerSection}>
+                    <Text style={styles.trackerCategory}>In Progress</Text>
+                    <Text style={styles.trackerItem}>• Track flight status</Text>
+                    <Text style={styles.trackerItem}>• Monitor rail update</Text>
+                  </View>
+
+                  <View style={styles.trackerSection}>
+                    <Text style={styles.trackerCategory}>Completed</Text>
+                    <Text style={[styles.trackerItem, styles.trackerItemDone]}>✓ Trip created</Text>
+                    <Text style={[styles.trackerItem, styles.trackerItemDone]}>✓ Hotel confirmed</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* SCOPE NOTES CARD */}
+            <View style={styles.scopeNotesCard}>
+              <Text style={styles.scopeNotesHeading}>SCOPE NOTES</Text>
+              <View style={styles.scopeNotesDivider} />
+
+              <View style={styles.scopeNoteBlock}>
+                <Text style={styles.scopeNoteText}>
+                  Flight live data only where access is confirmed
                 </Text>
               </View>
+              <View style={styles.scopeNoteDividerSub} />
 
-              <View style={styles.featureCard}>
-                <Text style={styles.featureEmoji}>📜</Text>
-                <Text style={styles.featureTitle}>Cancellation Intelligence</Text>
-                <Text style={styles.featureDesc}>
-                  Extracts live 24-hr risk-free refund rules and fee policies across top carriers.
+              <View style={styles.scopeNoteBlock}>
+                <Text style={styles.scopeNoteText}>
+                  Rail updates may be replay / simulation unless authorized
                 </Text>
               </View>
+              <View style={styles.scopeNoteDividerSub} />
 
-              <View style={styles.featureCard}>
-                <Text style={styles.featureEmoji}>🔗</Text>
-                <Text style={styles.featureTitle}>1-Click Deep Links</Text>
-                <Text style={styles.featureDesc}>
-                  Pre-fills booking params directly into Uber, Booking.com, and ConfirmTkt.
+              <View style={styles.scopeNoteBlock}>
+                <Text style={styles.scopeNoteText}>
+                  Consumer-account rail automation out of scope where prohibited
                 </Text>
               </View>
+              <View style={styles.scopeNoteDividerSub} />
 
-              <View style={styles.featureCard}>
-                <Text style={styles.featureEmoji}>🏨</Text>
-                <Text style={styles.featureTitle}>Hotel Reservations</Text>
-                <Text style={styles.featureDesc}>
-                  Reserve hotels with 'Pay at Property' options without payment friction.
+              <View style={styles.scopeNoteBlock}>
+                <Text style={styles.scopeNoteText}>
+                  Some actions are guided handoffs
                 </Text>
               </View>
             </View>
-          </View>
-        )}
+          </ScrollView>
+        </View>
+
+        {/* DECISION PHILOSOPHY ACCENT BANNER */}
+        <View style={styles.philosophyCard}>
+          <Text style={styles.philosophyKicker}>THE RECOVERY PRINCIPLE</Text>
+          <Text style={styles.philosophyTitle}>Keeping your existing plan is always a valid recommendation.</Text>
+          <Text style={styles.philosophyDesc}>
+            The best fix isn’t always a rebooking. TripSaathi compares preserving your existing plan against changing affected connections or continuing the next day — and the user approves exact actions.
+          </Text>
+        </View>
       </ScrollView>
 
-      {/* USER PROFILE MODAL */}
+      {/* USER PROFILE MODAL (RESTYLED IN EDITORIAL CREAM/TERRACOTTA THEME) */}
       <Modal
         visible={profileModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setProfileModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Traveler Profile</Text>
+              <View>
+                <Text style={styles.modalKicker}>TRIPSAATHI ACCOUNT</Text>
+                <Text style={styles.modalTitle}>Traveler Profile</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setProfileModalVisible(false)}
                 style={styles.closeBtn}
@@ -367,25 +659,27 @@ export default function App() {
                     </Text>
                   </View>
                 )}
-                <Text style={styles.modalEmailBadge}>Google Authenticated</Text>
+                <View style={styles.modalGoogleBadge}>
+                  <Text style={styles.modalGoogleBadgeText}>✓ Google Verified Identity</Text>
+                </View>
               </View>
 
               {saveMessage && <Text style={styles.successBanner}>{saveMessage}</Text>}
 
               {/* Form Fields */}
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Full Name</Text>
+                <Text style={styles.fieldLabel}>FULL NAME</Text>
                 <TextInput
                   style={styles.input}
                   value={name}
                   onChangeText={setName}
                   placeholder="Your full name"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={THEME.textMuted}
                 />
               </View>
 
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Email Address (Non-Editable)</Text>
+                <Text style={styles.fieldLabel}>EMAIL ADDRESS (NON-EDITABLE)</Text>
                 <View style={styles.disabledInputContainer}>
                   <TextInput
                     style={[styles.input, styles.disabledInput]}
@@ -397,19 +691,19 @@ export default function App() {
               </View>
 
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Phone Number</Text>
+                <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
                 <TextInput
                   style={styles.input}
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="+91 9876543210"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={THEME.textMuted}
                   keyboardType="phone-pad"
                 />
               </View>
 
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Gender</Text>
+                <Text style={styles.fieldLabel}>GENDER</Text>
                 <View style={styles.genderRow}>
                   {['Male', 'Female', 'Other'].map((g) => (
                     <TouchableOpacity
@@ -431,8 +725,8 @@ export default function App() {
               </View>
 
               <View style={styles.fieldGroup}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={styles.fieldLabel}>Date of Birth (YYYY-MM-DD)</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={styles.fieldLabel}>DATE OF BIRTH (YYYY-MM-DD)</Text>
                   {calculatedAge !== null && (
                     <Text style={styles.ageBadge}>Age: {calculatedAge} yrs (Auto)</Text>
                   )}
@@ -442,18 +736,18 @@ export default function App() {
                   value={dob}
                   onChangeText={handleDobChange}
                   placeholder="2000-05-15"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={THEME.textMuted}
                 />
               </View>
 
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Home City / Location</Text>
+                <Text style={styles.fieldLabel}>HOME CITY / LOCATION</Text>
                 <TextInput
                   style={styles.input}
                   value={homeLocation}
                   onChangeText={setHomeLocation}
                   placeholder="e.g. New Delhi, India"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={THEME.textMuted}
                 />
               </View>
 
@@ -471,7 +765,7 @@ export default function App() {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-                <Text style={styles.signOutBtnText}>Sign Out</Text>
+                <Text style={styles.signOutBtnText}>Sign Out from TripSaathi</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -484,60 +778,74 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#090d16',
+    backgroundColor: THEME.bg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
-    backgroundColor: '#0f172a',
+    borderBottomColor: THEME.border,
+    backgroundColor: THEME.bg,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  brandEmoji: {
+  brandTitle: {
+    fontFamily: SERIF_FONT,
     fontSize: 24,
-  },
-  brandText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#f8fafc',
+    fontWeight: '700',
+    color: THEME.text,
     letterSpacing: -0.5,
   },
-  badgeContainer: {
-    backgroundColor: 'rgba(2, 132, 199, 0.2)',
-    borderColor: '#0284c7',
+  kickerBadge: {
+    backgroundColor: THEME.primaryLight,
     borderWidth: 1,
+    borderColor: THEME.primaryBorder,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  kickerBadgeText: {
+    color: THEME.primary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerSignInBtn: {
+    backgroundColor: THEME.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 6,
   },
-  badgeText: {
-    color: '#38bdf8',
-    fontSize: 11,
-    fontWeight: '700',
+  headerSignInBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   avatarTouchable: {
     position: 'relative',
   },
   avatarImg: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#0284c7',
+    borderColor: THEME.primary,
   },
   avatarFallback: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#0284c7',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -553,54 +861,155 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#10b981',
+    backgroundColor: THEME.green,
     borderWidth: 2,
-    borderColor: '#0f172a',
+    borderColor: THEME.bg,
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
     alignItems: 'center',
   },
-  authContainer: {
+  heroSection: {
     width: '100%',
-    maxWidth: 480,
-    marginTop: 20,
+    maxWidth: 1100,
+    marginBottom: 28,
   },
-  heroBox: {
-    marginBottom: 24,
-    alignItems: 'center',
-    textAlign: 'center',
-  },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#f8fafc',
-    textAlign: 'center',
+  heroKicker: {
+    color: THEME.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.5,
     marginBottom: 8,
   },
+  heroTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 38,
+    lineHeight: 46,
+    color: THEME.text,
+    marginBottom: 14,
+    fontWeight: '600',
+  },
+  terracottaBar: {
+    width: 60,
+    height: 4,
+    backgroundColor: THEME.primary,
+    marginBottom: 16,
+    borderRadius: 2,
+  },
   heroSubtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 25,
+    color: THEME.textSecondary,
+    maxWidth: 750,
   },
-  card: {
-    backgroundColor: '#131c2e',
-    borderRadius: 16,
-    padding: 24,
+  promptBanner: {
+    width: '100%',
+    maxWidth: 1100,
+    backgroundColor: THEME.amberBg,
     borderWidth: 1,
-    borderColor: '#1e293b',
+    borderColor: 'rgba(194, 94, 26, 0.3)',
+    borderRadius: 8,
+    padding: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
   },
-  cardHeader: {
-    fontSize: 18,
+  promptIcon: {
+    fontSize: 20,
+  },
+  promptTitle: {
+    color: THEME.amber,
     fontWeight: '700',
-    color: '#f8fafc',
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  promptDesc: {
+    color: THEME.textSecondary,
+    fontSize: 12,
+  },
+  promptActionBtn: {
+    backgroundColor: THEME.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 4,
+  },
+  promptActionBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  userStatusBar: {
+    width: '100%',
+    maxWidth: 1100,
+    backgroundColor: THEME.paper,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  userStatusGreeting: {
+    fontFamily: SERIF_FONT,
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 2,
+  },
+  userStatusSub: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+  },
+  userStatusEditBtn: {
+    backgroundColor: THEME.bgAlt,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+  },
+  userStatusEditBtnText: {
+    color: THEME.text,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  authCard: {
+    width: '100%',
+    maxWidth: 540,
+    backgroundColor: THEME.paper,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    padding: 26,
+    alignItems: 'center',
+    marginBottom: 32,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  authCardKicker: {
+    color: THEME.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
     marginBottom: 6,
   },
-  cardSub: {
+  authCardTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 22,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 8,
+  },
+  authCardSub: {
     fontSize: 13,
-    color: '#94a3b8',
+    lineHeight: 20,
+    color: THEME.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -615,170 +1024,489 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   quickDevBtn: {
-    marginTop: 8,
+    marginTop: 6,
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 18,
+    borderRadius: 6,
+    backgroundColor: THEME.primaryLight,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: THEME.primaryBorder,
   },
   quickDevBtnText: {
-    color: '#cbd5e1',
+    color: THEME.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    width: '100%',
+    maxWidth: 1100,
+    marginBottom: 20,
+  },
+  tabBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: THEME.bgAlt,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  tabBtnActive: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  tabBtnText: {
     fontSize: 12,
     fontWeight: '600',
+    color: THEME.textSecondary,
   },
-  dashboardContainer: {
+  tabBtnTextActive: {
+    color: '#fff',
+  },
+  flowLayout: {
     width: '100%',
-    maxWidth: 800,
+    maxWidth: 1100,
+    marginBottom: 36,
   },
-  welcomeCard: {
-    backgroundColor: '#131c2e',
-    borderRadius: 16,
-    padding: 20,
+  flowRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    paddingBottom: 16,
+  },
+  flowArrow: {
+    fontSize: 22,
+    color: THEME.primary,
+    alignSelf: 'center',
+    opacity: 0.6,
+  },
+  phoneScreenContainer: {
+    alignItems: 'center',
+    width: 220,
+  },
+  screenLabel: {
+    color: THEME.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  phoneMockup: {
+    width: '100%',
+    minHeight: 390,
+    backgroundColor: THEME.paper,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    borderRadius: 14,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  screenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  backArrow: {
+    fontSize: 14,
+    color: THEME.text,
+  },
+  screenHeaderTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  inputRow: {
+    marginBottom: 10,
+  },
+  inputPrefix: {
+    fontSize: 10,
+    color: THEME.textMuted,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputFieldMock: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1e293b',
-    marginBottom: 16,
-  },
-  welcomeInfo: {
-    flex: 1,
-  },
-  welcomeTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#f8fafc',
-    marginBottom: 4,
-  },
-  welcomeEmail: {
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-  viewProfileBtn: {
-    backgroundColor: '#0284c7',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
-  viewProfileBtnText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  promptBanner: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
-  },
-  promptIcon: {
-    fontSize: 22,
-  },
-  promptTitle: {
-    color: '#fbbf24',
-    fontWeight: '700',
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  promptDesc: {
-    color: '#fef3c7',
-    fontSize: 12,
-  },
-  promptActionBtn: {
-    backgroundColor: '#f59e0b',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    borderColor: THEME.border,
     borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: THEME.paperSubtle,
   },
-  promptActionBtnText: {
-    color: '#000',
+  inputAirportCode: {
+    fontWeight: '800',
+    fontSize: 12,
+    color: THEME.text,
+  },
+  inputCityName: {
+    fontSize: 11,
+    color: THEME.textSecondary,
+  },
+  inputDateText: {
+    fontSize: 11,
+    color: THEME.text,
+    fontWeight: '600',
+  },
+  calendarIcon: {
+    fontSize: 11,
+  },
+  chevronIcon: {
+    fontSize: 14,
+    color: THEME.textMuted,
+  },
+  terracottaBtn: {
+    backgroundColor: THEME.primary,
+    borderRadius: 6,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 18,
+  },
+  terracottaBtnText: {
+    color: '#fff',
     fontWeight: '700',
     fontSize: 12,
   },
-  sectionHeading: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#f8fafc',
-    marginBottom: 12,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  featureCard: {
-    backgroundColor: '#131c2e',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    flexBasis: '48%',
-    flexGrow: 1,
-    minWidth: 240,
-  },
-  featureEmoji: {
-    fontSize: 26,
-    marginBottom: 8,
-  },
-  featureTitle: {
+  dashboardTitle: {
+    fontFamily: SERIF_FONT,
     fontSize: 15,
     fontWeight: '700',
-    color: '#f8fafc',
+    color: THEME.text,
+    marginBottom: 6,
+  },
+  dashboardSubtabs: {
+    flexDirection: 'row',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+    paddingBottom: 6,
+    marginBottom: 10,
+  },
+  subtabItem: {
+    fontSize: 10,
+    color: THEME.textMuted,
+    fontWeight: '600',
+  },
+  subtabItemActive: {
+    color: THEME.primary,
+    borderBottomWidth: 2,
+    borderBottomColor: THEME.primary,
+    paddingBottom: 4,
+  },
+  routeHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  routeDate: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    marginBottom: 10,
+  },
+  segmentList: {
+    gap: 8,
+  },
+  segmentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.paperSubtle,
+  },
+  segmentIcon: {
+    fontSize: 12,
+  },
+  segmentName: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  segmentMeta: {
+    fontSize: 9,
+    color: THEME.textMuted,
+  },
+  tagGreen: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.green,
+    backgroundColor: THEME.greenBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  tagAmber: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.amber,
+    backgroundColor: THEME.amberBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  tagMuted: {
+    fontSize: 9,
+    color: THEME.textMuted,
+    paddingHorizontal: 4,
+  },
+  impactTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 15,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 2,
+  },
+  impactSub: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    marginBottom: 12,
+  },
+  delayBox: {
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    borderRadius: 6,
+    padding: 10,
+    alignItems: 'center',
+    marginBottom: 14,
+    backgroundColor: THEME.paperSubtle,
+  },
+  delayBoxLabel: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    marginBottom: 2,
+  },
+  delayBoxHero: {
+    fontFamily: SERIF_FONT,
+    fontSize: 26,
+    fontWeight: '800',
+    color: THEME.primary,
+    marginVertical: 2,
+  },
+  delayBoxLocation: {
+    fontSize: 10,
+    color: THEME.textMuted,
+  },
+  impactItemList: {
+    gap: 8,
+  },
+  impactRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.paperSubtle,
+  },
+  impactRowLabel: {
+    fontSize: 11,
+    color: THEME.text,
+    fontWeight: '600',
+  },
+  recoveryTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 15,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 2,
+  },
+  recoverySub: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    marginBottom: 10,
+  },
+  optionBox: {
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 8,
+    backgroundColor: THEME.paperSubtle,
+  },
+  optionHeader: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.primary,
+    marginBottom: 2,
+  },
+  optionAction: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.text,
     marginBottom: 4,
   },
-  featureDesc: {
-    fontSize: 12,
-    color: '#94a3b8',
-    lineHeight: 18,
+  optionMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  optionTime: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+  },
+  optionImpactGreen: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.green,
+  },
+  optionImpactAmber: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.amber,
+  },
+  trackerTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 15,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 2,
+  },
+  trackerSub: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    marginBottom: 10,
+  },
+  trackerSection: {
+    marginBottom: 10,
+  },
+  trackerCategory: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.primary,
+    marginBottom: 3,
+    textTransform: 'uppercase',
+  },
+  trackerItem: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    marginBottom: 2,
+  },
+  trackerItemDone: {
+    color: THEME.green,
+  },
+  scopeNotesCard: {
+    width: 200,
+    backgroundColor: THEME.paperSubtle,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    borderRadius: 14,
+    padding: 16,
+  },
+  scopeNotesHeading: {
+    color: THEME.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  scopeNotesDivider: {
+    height: 2,
+    backgroundColor: THEME.primary,
+    marginBottom: 12,
+  },
+  scopeNoteBlock: {
+    marginVertical: 4,
+  },
+  scopeNoteText: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: THEME.textSecondary,
+  },
+  scopeNoteDividerSub: {
+    height: 1,
+    backgroundColor: THEME.border,
+    marginVertical: 8,
+  },
+  philosophyCard: {
+    width: '100%',
+    maxWidth: 1100,
+    backgroundColor: THEME.paper,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    padding: 24,
+  },
+  philosophyKicker: {
+    color: THEME.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  philosophyTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 20,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 8,
+  },
+  philosophyDesc: {
+    fontSize: 13,
+    lineHeight: 21,
+    color: THEME.textSecondary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(30, 27, 24, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   modalContainer: {
-    backgroundColor: '#0f172a',
-    borderRadius: 20,
+    backgroundColor: THEME.paper,
+    borderRadius: 14,
     width: '100%',
-    maxWidth: 500,
+    maxWidth: 520,
     maxHeight: '90%',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: THEME.borderDark,
     overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: THEME.border,
+    backgroundColor: THEME.bg,
+  },
+  modalKicker: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.primary,
+    letterSpacing: 1.2,
+    marginBottom: 2,
   },
   modalTitle: {
-    fontSize: 18,
+    fontFamily: SERIF_FONT,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#f8fafc',
+    color: THEME.text,
   },
   closeBtn: {
     padding: 6,
   },
   closeBtnText: {
-    fontSize: 18,
-    color: '#94a3b8',
+    fontSize: 16,
+    color: THEME.textSecondary,
     fontWeight: '700',
   },
   modalScroll: {
-    padding: 20,
+    padding: 22,
   },
   modalProfileHeader: {
     alignItems: 'center',
@@ -789,14 +1517,14 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 36,
     borderWidth: 3,
-    borderColor: '#0284c7',
+    borderColor: THEME.primary,
     marginBottom: 8,
   },
   modalAvatarFallback: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#0284c7',
+    backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -806,43 +1534,49 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
   },
-  modalEmailBadge: {
-    color: '#38bdf8',
-    fontSize: 12,
-    fontWeight: '600',
-    backgroundColor: 'rgba(56, 189, 248, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
+  modalGoogleBadge: {
+    backgroundColor: THEME.primaryLight,
+    borderColor: THEME.primaryBorder,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  modalGoogleBadgeText: {
+    color: THEME.primary,
+    fontSize: 11,
+    fontWeight: '700',
   },
   successBanner: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderColor: '#10b981',
+    backgroundColor: THEME.greenBg,
+    borderColor: THEME.green,
     borderWidth: 1,
-    color: '#34d399',
+    color: THEME.green,
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 6,
     textAlign: 'center',
     marginBottom: 16,
     fontSize: 13,
+    fontWeight: '600',
   },
   fieldGroup: {
     marginBottom: 14,
   },
   fieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#cbd5e1',
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.textSecondary,
     marginBottom: 6,
+    letterSpacing: 0.6,
   },
   input: {
-    backgroundColor: '#1e293b',
+    backgroundColor: THEME.paperSubtle,
     borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 8,
+    borderColor: THEME.borderDark,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#f8fafc',
+    color: THEME.text,
     fontSize: 14,
   },
   disabledInputContainer: {
@@ -850,8 +1584,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   disabledInput: {
-    backgroundColor: 'rgba(30, 41, 59, 0.5)',
-    color: '#94a3b8',
+    backgroundColor: THEME.bgAlt,
+    color: THEME.textMuted,
     paddingRight: 36,
   },
   lockIcon: {
@@ -867,39 +1601,41 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: '#1e293b',
+    borderRadius: 6,
+    backgroundColor: THEME.paperSubtle,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: THEME.borderDark,
   },
   genderBtnActive: {
-    backgroundColor: 'rgba(2, 132, 199, 0.2)',
-    borderColor: '#0284c7',
+    backgroundColor: THEME.primaryLight,
+    borderColor: THEME.primary,
   },
   genderBtnText: {
-    color: '#94a3b8',
+    color: THEME.textSecondary,
     fontWeight: '600',
     fontSize: 13,
   },
   genderBtnTextActive: {
-    color: '#38bdf8',
+    color: THEME.primary,
+    fontWeight: '700',
   },
   ageBadge: {
-    color: '#10b981',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.green,
+    fontSize: 11,
+    fontWeight: '700',
   },
   saveBtn: {
-    backgroundColor: '#0284c7',
+    backgroundColor: THEME.primary,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 6,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
   },
   saveBtnText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 14,
+    letterSpacing: 0.5,
   },
   signOutBtn: {
     paddingVertical: 12,
@@ -907,7 +1643,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   signOutBtnText: {
-    color: '#ef4444',
+    color: THEME.primary,
     fontWeight: '600',
     fontSize: 13,
   },
