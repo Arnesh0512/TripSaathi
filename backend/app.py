@@ -1,14 +1,31 @@
 import os
 import json
 import requests
-from flask import Flask, request, jsonify, render_template_string
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from tinyfish import TinyFish
 
 load_dotenv()
 API_KEY = os.getenv("TINYFISH_API_KEY")
 
-app = Flask(__name__)
+app = FastAPI(
+    title="TripSaathi AI Travel Agent API",
+    description="FastAPI service powered by TinyFish Mako web agent model for flight discovery, airline policy intelligence, and booking automation.",
+    version="1.0.0"
+)
+
+# Enable CORS for React Native mobile & web clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 client = TinyFish(api_key=API_KEY) if API_KEY else None
 
 INDEX_HTML = """
@@ -776,51 +793,48 @@ INDEX_HTML = """
 </html>
 """
 
-@app.route("/")
-def index():
-    return render_template_string(INDEX_HTML)
+@app.get("/", response_class=HTMLResponse)
+async def index():
+    return HTMLResponse(content=INDEX_HTML)
 
-@app.route("/api/get-setup-popup", methods=["POST"])
-def api_get_setup_popup():
-    data = request.json or {}
+@app.post("/api/get-setup-popup")
+async def api_get_setup_popup(request: Request):
+    data = await request.json() if await request.body() else {}
     login_mode = data.get("login_mode", "")
     target_site = data.get("target_site", "https://github.com/login")
 
     # If direct GitHub sign-in requested:
     if "Direct" in login_mode or "github.com/login" in login_mode or "Direct" in target_site:
-        return jsonify({
+        return {
             "status": "ready",
             "mode": "direct_github_login",
             "setup_url": "https://github.com/login",
             "action": "Opening native GitHub sign-in window directly on your screen...",
             "notes": "Native GitHub sign-in page loaded directly with zero streaming latency. Your authenticated session is saved in your local browser."
-        })
+        }
 
     # Otherwise, TinyFish cloud profile setup
     headers = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
     try:
-        # Get default profile ID
         list_res = requests.get("https://agent.tinyfish.ai/v1/profiles", headers=headers)
         profiles = list_res.json().get("profiles", [])
         profile_id = profiles[0]["id"] if profiles else "prof_b5edcc851ab945ce"
-
-        # According to TinyFish documentation, the hosted setup URL format is:
         setup_url = f"https://agent.tinyfish.ai/profiles/{profile_id}/setup?domain=github.com&source=dashboard"
 
-        return jsonify({
+        return {
             "status": "ready",
             "mode": "tinyfish_cloud_profile",
             "profile_id": profile_id,
             "setup_url": setup_url,
             "action": "Opening TinyFish Cloud Profile session in popup window...",
             "instructions": "Log into GitHub in the remote browser and click 'Save profile' so Tab 6 can reuse it in the cloud."
-        })
+        }
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
-@app.route("/api/agent", methods=["POST"])
-def api_agent():
-    data = request.json or {}
+@app.post("/api/agent")
+async def api_agent(request: Request):
+    data = await request.json() if await request.body() else {}
     url = data.get("url")
     goal = data.get("goal")
     use_profile = data.get("use_profile", False)
@@ -861,39 +875,66 @@ def api_agent():
         }
         if hasattr(res, "run_id") and res.run_id:
             result_payload["run_id"] = res.run_id
-        return jsonify(result_payload)
+        return result_payload
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
-@app.route("/api/search", methods=["POST"])
-def api_search():
-    data = request.json or {}
+@app.post("/api/search")
+async def api_search(request: Request):
+    data = await request.json() if await request.body() else {}
     query = data.get("query", "")
     location = data.get("location", "US")
     domain_type = data.get("domain_type", "web")
 
     try:
         res = client.search.query(query=query, location=location, domain_type=domain_type)
-        return jsonify(res if isinstance(res, (dict, list)) else {"data": str(res)})
+        if hasattr(res, "results"):
+            return {
+                "query": query,
+                "location": location,
+                "total_results": getattr(res, "total_results", len(res.results)),
+                "results": [
+                    {
+                        "title": r.title,
+                        "url": r.url,
+                        "snippet": r.snippet,
+                        "site_name": getattr(r, "site_name", "")
+                    }
+                    for r in res.results
+                ]
+            }
+        return res if isinstance(res, (dict, list)) else {"data": str(res)}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
-@app.route("/api/fetch", methods=["POST"])
-def api_fetch():
-    data = request.json or {}
+@app.post("/api/fetch")
+async def api_fetch(request: Request):
+    data = await request.json() if await request.body() else {}
     urls = data.get("urls", [])
 
     try:
         res = client.fetch.get_contents(urls=urls)
-        return jsonify(res if isinstance(res, (dict, list)) else {"data": str(res)})
+        if hasattr(res, "contents"):
+            return {
+                "contents": [
+                    {
+                        "url": getattr(c, "url", ""),
+                        "status": getattr(c, "status", 200),
+                        "text": getattr(c, "text", "")[:2000],
+                        "format": getattr(c, "format", "markdown")
+                    }
+                    for c in res.contents
+                ]
+            }
+        return res if isinstance(res, (dict, list)) else {"data": str(res)}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
-@app.route("/api/airline-policies", methods=["POST"])
-def api_airline_policies():
-    data = request.json or {}
+@app.post("/api/airline-policies")
+async def api_airline_policies(request: Request):
+    data = await request.json() if await request.body() else {}
     carrier_group = data.get("carrier_group", "Major US Airlines (Delta, United, American)")
     query = data.get("query", "top 3 major airplane flight booking websites")
     policy_aspects = data.get("policy_aspects", "24-hour cancellation, refundability, change fees")
@@ -981,7 +1022,7 @@ def api_airline_policies():
         "Basic Economy Penalties: Basic Economy tickets represent the greatest cancellation risk—typically non-changeable, non-refundable, or subject to steep forfeiture after the 24-hour initial grace period."
     ]
 
-    return jsonify({
+    return {
         "status": "COMPLETED",
         "pipeline": "Autonomous 2-Step Airplane Booking & Cancellation Analysis",
         "step_1_websites_found": step1_results,
@@ -993,8 +1034,9 @@ def api_airline_policies():
             "policy_aspects": policy_aspects,
             "total_websites_analyzed": len(step1_results)
         }
-    })
+    }
 
 if __name__ == "__main__":
-    print("Starting TinyFish Showcase Server on port 7000...")
-    app.run(host="0.0.0.0", port=7000, debug=False)
+    print("Starting TripSaathi FastAPI Backend on port 7000...")
+    print("Interactive Swagger Docs: http://localhost:7000/docs")
+    uvicorn.run(app, host="0.0.0.0", port=7000)
