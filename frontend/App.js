@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -30,7 +31,7 @@ const THEME = {
   primary: '#A83827',            // Burnt terracotta / brick red
   primaryHover: '#8E2E1F',       // Deep terracotta
   primaryLight: 'rgba(168, 56, 39, 0.08)',
-  primaryBorder: 'rgba(168, 56, 39, 0.3)',
+  primaryBorder: 'rgba(168, 56, 39, 0.25)',
   
   text: '#1E1B18',               // Deep charcoal / espresso
   textSecondary: '#6E675F',      // Warm slate / stone
@@ -49,11 +50,14 @@ const SERIF_FONT = Platform.select({
 });
 
 export default function App() {
+  const { width: windowWidth } = useWindowDimensions();
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'ADD' | 'DASH' | 'IMPACT' | 'RECOVERY' | 'TRACKER'
+  const [activeTab, setActiveTab] = useState('DASHBOARD'); // 'DASHBOARD' | 'ADD_TRIP' | 'IMPACT' | 'RECOVERY' | 'TRACKER'
+  const [dashboardSubtab, setDashboardSubtab] = useState('Overview'); // 'Overview' | 'Updates' | 'Alerts'
+  const [phoneFrameMode, setPhoneFrameMode] = useState(true); // Toggle phone frame vs full width on web
 
   // Profile Form State
   const [name, setName] = useState('');
@@ -98,7 +102,7 @@ export default function App() {
           size: 'large',
           text: 'signin_with',
           shape: 'rectangular',
-          width: 280,
+          width: 260,
         });
       }
     }
@@ -191,7 +195,7 @@ export default function App() {
       if (res.ok) {
         setUser(data);
         setCalculatedAge(data.age);
-        setSaveMessage('✅ Profile updated successfully in TripSaathi database!');
+        setSaveMessage('✅ Profile updated in TripSaathi database!');
         setTimeout(() => setSaveMessage(null), 3500);
       } else {
         alertError(data.detail || 'Could not update profile');
@@ -218,459 +222,517 @@ export default function App() {
   };
 
   const isProfileIncomplete = user && (!user.phone_number || !user.date_of_birth || !user.home_location);
+  const isDesktopWeb = Platform.OS === 'web' && windowWidth > 600;
+  const showPhoneFrame = isDesktopWeb && phoneFrameMode;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={showPhoneFrame ? styles.desktopBackdrop : styles.fullScreenContainer}>
       <StatusBar style="dark" />
 
-      {/* TOP EDITORIAL HEADER */}
-      <View style={styles.header}>
-        <View style={styles.brandRow}>
-          <Text style={styles.brandTitle}>TripSaathi</Text>
-          <View style={styles.kickerBadge}>
-            <Text style={styles.kickerBadgeText}>CONNECTED TRAVEL RECOVERY</Text>
+      {/* TOP DESKTOP CONTROLS BAR (Only visible on wide desktop view) */}
+      {isDesktopWeb && (
+        <View style={styles.desktopControlBar}>
+          <View style={styles.desktopControlLeft}>
+            <Text style={styles.desktopBrand}>TripSaathi</Text>
+            <Text style={styles.desktopModeTag}>Mobile Preview Mode (412×860)</Text>
           </View>
+          <TouchableOpacity
+            style={styles.desktopViewToggle}
+            onPress={() => setPhoneFrameMode(!phoneFrameMode)}
+          >
+            <Text style={styles.desktopViewToggleText}>
+              {phoneFrameMode ? '🖥️ Switch to Full Width' : '📱 Switch to Phone Frame'}
+            </Text>
+          </TouchableOpacity>
         </View>
+      )}
 
-        <View style={styles.headerRight}>
-          {user ? (
+      {/* PHONE DEVICE CONTAINER */}
+      <View style={showPhoneFrame ? styles.phoneFrameWrapper : styles.phoneContentContainer}>
+        {/* PHONE SPEAKER / CAMERA NOTCH (Visible when phone frame is active) */}
+        {showPhoneFrame && (
+          <View style={styles.phoneDynamicIsland}>
+            <View style={styles.phoneCameraDot} />
+            <View style={styles.phoneSpeakerBar} />
+          </View>
+        )}
+
+        <SafeAreaView style={styles.phoneInnerCanvas}>
+          {/* MOBILE STATUS BAR ROW */}
+          <View style={styles.mobileStatusBar}>
+            <Text style={styles.mobileStatusTime}>9:41</Text>
+            <View style={styles.mobileStatusIcons}>
+              <Text style={styles.mobileStatusIconItem}>📶</Text>
+              <Text style={styles.mobileStatusIconItem}>🔋</Text>
+            </View>
+          </View>
+
+          {/* MOBILE APP HEADER */}
+          <View style={styles.mobileHeader}>
+            <View>
+              <Text style={styles.appHeaderTitle}>TripSaathi</Text>
+              <Text style={styles.appHeaderSub}>Connected Travel Recovery</Text>
+            </View>
+
+            {user ? (
+              <TouchableOpacity
+                style={styles.avatarTouchable}
+                onPress={() => setProfileModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                {user.profile_pic ? (
+                  <Image source={{ uri: user.profile_pic }} style={styles.avatarImg} />
+                ) : (
+                  <View style={styles.avatarFallback}>
+                    <Text style={styles.avatarFallbackText}>
+                      {user.name ? user.name[0].toUpperCase() : 'U'}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.onlineDot} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.headerDevBtn}
+                onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
+              >
+                <Text style={styles.headerDevBtnText}>⚡ Sign In</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* INCOMPLETE PROFILE REMINDER PILL */}
+          {user && isProfileIncomplete && (
             <TouchableOpacity
-              style={styles.avatarTouchable}
+              style={styles.incompleteProfilePill}
               onPress={() => setProfileModalVisible(true)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              {user.profile_pic ? (
-                <Image source={{ uri: user.profile_pic }} style={styles.avatarImg} />
-              ) : (
-                <View style={styles.avatarFallback}>
-                  <Text style={styles.avatarFallbackText}>
-                    {user.name ? user.name[0].toUpperCase() : 'U'}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.onlineDot} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.headerSignInBtn}
-              onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
-            >
-              <Text style={styles.headerSignInBtnText}>⚡ Dev Sign In</Text>
+              <Text style={styles.incompleteIcon}>⚠️</Text>
+              <Text style={styles.incompleteText}>Complete your traveler profile (DOB, phone)</Text>
+              <Text style={styles.incompleteArrow}>›</Text>
             </TouchableOpacity>
           )}
-        </View>
-      </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* EDITORIAL HERO SECTION */}
-        <View style={styles.heroSection}>
-          <Text style={styles.heroKicker}>AI-ASSISTED RECOVERY FOR CONNECTED TRAVEL</Text>
-          <Text style={styles.heroTitle}>
-            A credible MVP,{'\n'}not a promise to automate everything.
-          </Text>
-          <View style={styles.terracottaBar} />
-          <Text style={styles.heroSubtitle}>
-            When a journey breaks, help the whole trip recover. One disruption triggers a downstream chain reaction — we detect changes, validate rules, and empower you to decide.
-          </Text>
-        </View>
+          {/* SCROLLABLE SCREEN BODY */}
+          <ScrollView
+            style={styles.screenScrollView}
+            contentContainerStyle={styles.screenScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* GOOGLE SIGN IN CARD (If not signed in) */}
+            {!token && (
+              <View style={styles.authCard}>
+                <Text style={styles.authKicker}>SECURE SIGN IN</Text>
+                <Text style={styles.authTitle}>Sign in with Google</Text>
+                <Text style={styles.authDesc}>
+                  Stores your trip bookings in MongoDB and enables automated cross-provider recovery.
+                </Text>
 
-        {/* PROFILE COMPLETION BANNER (IF LOGGED IN AND MISSING FIELDS) */}
-        {user && isProfileIncomplete && (
-          <View style={styles.promptBanner}>
-            <Text style={styles.promptIcon}>⚠️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.promptTitle}>Complete your traveler profile</Text>
-              <Text style={styles.promptDesc}>
-                Add your phone number, date of birth, and home city so recovery options can auto-align with your trip.
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.promptActionBtn}
-              onPress={() => setProfileModalVisible(true)}
-            >
-              <Text style={styles.promptActionBtnText}>Edit Profile</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+                {loading ? (
+                  <ActivityIndicator color={THEME.primary} style={{ marginVertical: 12 }} />
+                ) : (
+                  <View style={styles.authBtnContainer}>
+                    <View id="googleSignInBtn" style={styles.googleBtnBox} />
+                    <TouchableOpacity
+                      style={styles.fastDevBtn}
+                      onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
+                    >
+                      <Text style={styles.fastDevBtnText}>⚡ One-Tap Fast Developer Sign In</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
 
-        {/* LOGGED IN USER STATUS BAR */}
-        {user && (
-          <View style={styles.userStatusBar}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.userStatusGreeting}>Signed in as {user.name || user.email}</Text>
-              <Text style={styles.userStatusSub}>Click your avatar anytime to view & edit your profile details.</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.userStatusEditBtn}
-              onPress={() => setProfileModalVisible(true)}
-            >
-              <Text style={styles.userStatusEditBtnText}>View Profile 👤</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+            {/* SCREEN 1: ADD TRIP */}
+            {activeTab === 'ADD_TRIP' && (
+              <View style={styles.activeScreenBox}>
+                <View style={styles.screenTitleRow}>
+                  <Text style={styles.screenTitleSerif}>Add Trip</Text>
+                  <Text style={styles.screenStepBadge}>STAGE 01</Text>
+                </View>
 
-        {/* GOOGLE SIGN IN CARD (SHOWN WHEN LOGGED OUT) */}
-        {!token && (
-          <View style={styles.authCard}>
-            <Text style={styles.authCardKicker}>AUTHENTICATION</Text>
-            <Text style={styles.authCardTitle}>Sign in to TripSaathi</Text>
-            <Text style={styles.authCardSub}>
-              Connect with Google to securely store your trip records, manage downstream bookings, and sync profile recovery preferences.
-            </Text>
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldKicker}>FROM</Text>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.airportCode}>DEL</Text>
+                    <Text style={styles.cityName}>New Delhi</Text>
+                  </View>
+                </View>
 
-            {loading ? (
-              <ActivityIndicator size="large" color={THEME.primary} style={{ marginVertical: 20 }} />
-            ) : (
-              <View style={styles.loginActionsContainer}>
-                {/* Official Google GIS Button placeholder */}
-                <View id="googleSignInBtn" style={styles.googleBtnContainer} />
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldKicker}>TO</Text>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.airportCode}>BOM</Text>
+                    <Text style={styles.cityName}>Mumbai</Text>
+                  </View>
+                </View>
 
-                {/* Developer Fast Login */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldKicker}>DATE</Text>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputRegularText}>24 May 2025</Text>
+                    <Text style={styles.inputIconRight}>📅</Text>
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.fieldKicker}>PASSENGERS</Text>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputRegularText}>1 passenger</Text>
+                    <Text style={styles.inputIconRight}>›</Text>
+                  </View>
+                </View>
+
                 <TouchableOpacity
-                  style={styles.quickDevBtn}
-                  onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
+                  style={styles.primaryTerracottaBtn}
+                  onPress={() => setActiveTab('DASHBOARD')}
                 >
-                  <Text style={styles.quickDevBtnText}>⚡ One-Tap Fast Sign In (Developer Mode)</Text>
+                  <Text style={styles.primaryTerracottaBtnText}>Add Trip</Text>
                 </TouchableOpacity>
               </View>
             )}
-          </View>
-        )}
 
-        {/* INTERACTIVE NAVIGATION TABS */}
-        <View style={styles.tabContainer}>
-          {[
-            { id: 'ALL', label: 'All Screens' },
-            { id: 'ADD', label: 'Add Trip' },
-            { id: 'DASH', label: 'Trip Dashboard' },
-            { id: 'IMPACT', label: 'Impact View' },
-            { id: 'RECOVERY', label: 'Recovery Plans' },
-            { id: 'TRACKER', label: 'Action Tracker' },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.tabBtn, activeTab === tab.id && styles.tabBtnActive]}
-              onPress={() => setActiveTab(tab.id)}
-            >
-              <Text style={[styles.tabBtnText, activeTab === tab.id && styles.tabBtnTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+            {/* SCREEN 2: TRIP DASHBOARD */}
+            {activeTab === 'DASHBOARD' && (
+              <View style={styles.activeScreenBox}>
+                <View style={styles.screenTitleRow}>
+                  <Text style={styles.screenTitleSerif}>Trip Dashboard</Text>
+                  <Text style={styles.screenStepBadge}>STAGE 02</Text>
+                </View>
 
-        {/* FLOWS CONTAINER (MOCKUP CARDS IN NEW THEME) */}
-        <View style={styles.flowLayout}>
-          <ScrollView
-            horizontal={activeTab === 'ALL'}
-            showsHorizontalScrollIndicator={true}
-            contentContainerStyle={styles.flowRow}
-          >
-            {/* 1. ADD TRIP SCREEN */}
-            {(activeTab === 'ALL' || activeTab === 'ADD') && (
-              <View style={styles.phoneScreenContainer}>
-                <Text style={styles.screenLabel}>ADD TRIP</Text>
-                <View style={styles.phoneMockup}>
-                  <View style={styles.screenHeader}>
-                    <Text style={styles.backArrow}>←</Text>
-                    <Text style={styles.screenHeaderTitle}>Add Trip</Text>
-                  </View>
+                {/* Subtabs: Overview | Updates | Alerts */}
+                <View style={styles.subtabsRow}>
+                  {['Overview', 'Updates', 'Alerts'].map((tab) => (
+                    <TouchableOpacity
+                      key={tab}
+                      style={[styles.subtabBtn, dashboardSubtab === tab && styles.subtabBtnActive]}
+                      onPress={() => setDashboardSubtab(tab)}
+                    >
+                      <Text
+                        style={[
+                          styles.subtabText,
+                          dashboardSubtab === tab && styles.subtabTextActive,
+                        ]}
+                      >
+                        {tab}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-                  <View style={styles.inputRow}>
-                    <Text style={styles.inputPrefix}>From</Text>
-                    <View style={styles.inputFieldMock}>
-                      <Text style={styles.inputAirportCode}>DEL</Text>
-                      <Text style={styles.inputCityName}>New Delhi</Text>
+                {/* Route Header */}
+                <View style={styles.routeBox}>
+                  <Text style={styles.routeTitle}>Delhi → Mumbai</Text>
+                  <Text style={styles.routeDateText}>24 May 2025 • Multi-Modal Journey</Text>
+                </View>
+
+                {/* Journey Segments List */}
+                <View style={styles.segmentList}>
+                  <View style={styles.segmentCard}>
+                    <View style={styles.segmentIconBox}>
+                      <Text style={styles.segmentEmoji}>✈️</Text>
                     </View>
-                  </View>
-
-                  <View style={styles.inputRow}>
-                    <Text style={styles.inputPrefix}>To</Text>
-                    <View style={styles.inputFieldMock}>
-                      <Text style={styles.inputAirportCode}>BOM</Text>
-                      <Text style={styles.inputCityName}>Mumbai</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.segmentName}>Flight AI-804</Text>
+                      <Text style={styles.segmentDetail}>Indira Gandhi T3 → BOM T2</Text>
                     </View>
+                    <Text style={styles.badgeGreen}>On Time</Text>
                   </View>
 
-                  <View style={styles.inputRow}>
-                    <Text style={styles.inputPrefix}>Date</Text>
-                    <View style={styles.inputFieldMock}>
-                      <Text style={styles.inputDateText}>24 May 2025</Text>
-                      <Text style={styles.calendarIcon}>📅</Text>
+                  <TouchableOpacity
+                    style={[styles.segmentCard, styles.segmentCardAlert]}
+                    onPress={() => setActiveTab('IMPACT')}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.segmentIconBox}>
+                      <Text style={styles.segmentEmoji}>🚆</Text>
                     </View>
-                  </View>
-
-                  <View style={styles.inputRow}>
-                    <Text style={styles.inputPrefix}>Passengers</Text>
-                    <View style={styles.inputFieldMock}>
-                      <Text style={styles.inputDateText}>1</Text>
-                      <Text style={styles.chevronIcon}>›</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.segmentName}>Rail Connection</Text>
+                      <Text style={styles.segmentDetail}>ID: 146aved • Dep 14:10</Text>
                     </View>
-                  </View>
-
-                  <TouchableOpacity style={styles.terracottaBtn} activeOpacity={0.85}>
-                    <Text style={styles.terracottaBtnText}>Add Trip</Text>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.badgeAmber}>At Risk</Text>
+                      <Text style={styles.viewImpactHint}>View Impact ›</Text>
+                    </View>
                   </TouchableOpacity>
-                </View>
-              </View>
-            )}
 
-            {/* ARROW CONNECTOR */}
-            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
-
-            {/* 2. TRIP DASHBOARD SCREEN */}
-            {(activeTab === 'ALL' || activeTab === 'DASH') && (
-              <View style={styles.phoneScreenContainer}>
-                <Text style={styles.screenLabel}>TRIP DASHBOARD</Text>
-                <View style={styles.phoneMockup}>
-                  <Text style={styles.dashboardTitle}>Trip Dashboard</Text>
-                  
-                  {/* Subtabs */}
-                  <View style={styles.dashboardSubtabs}>
-                    <Text style={[styles.subtabItem, styles.subtabItemActive]}>Overview</Text>
-                    <Text style={styles.subtabItem}>Updates</Text>
-                    <Text style={styles.subtabItem}>Alerts</Text>
+                  <View style={styles.segmentCard}>
+                    <View style={styles.segmentIconBox}>
+                      <Text style={styles.segmentEmoji}>🏨</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.segmentName}>Hotel Taj Lands End</Text>
+                      <Text style={styles.segmentDetail}>Check-in: 15:00 onwards</Text>
+                    </View>
+                    <Text style={styles.badgeGreen}>Confirmed</Text>
                   </View>
 
-                  <Text style={styles.routeHeader}>Delhi → Mumbai</Text>
-                  <Text style={styles.routeDate}>24 May 2025</Text>
-
-                  {/* Segments */}
-                  <View style={styles.segmentList}>
-                    <View style={styles.segmentItem}>
-                      <Text style={styles.segmentIcon}>✈️</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.segmentName}>Flight</Text>
-                      </View>
-                      <Text style={styles.tagGreen}>On Time</Text>
+                  <View style={styles.segmentCard}>
+                    <View style={styles.segmentIconBox}>
+                      <Text style={styles.segmentEmoji}>🚗</Text>
                     </View>
-
-                    <View style={styles.segmentItem}>
-                      <Text style={styles.segmentIcon}>🚆</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.segmentName}>Rail</Text>
-                        <Text style={styles.segmentMeta}>ID: 146aved</Text>
-                      </View>
-                      <Text style={styles.tagAmber}>At Risk</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.segmentName}>Ground Transfer</Text>
+                      <Text style={styles.segmentDetail}>Chauffeur pickup at BOM</Text>
                     </View>
-
-                    <View style={styles.segmentItem}>
-                      <Text style={styles.segmentIcon}>🏨</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.segmentName}>Hotel</Text>
-                      </View>
-                      <Text style={styles.tagGreen}>Confirmed</Text>
-                    </View>
-
-                    <View style={styles.segmentItem}>
-                      <Text style={styles.segmentIcon}>🚗</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.segmentName}>Ground Transfer</Text>
-                      </View>
-                      <Text style={styles.tagMuted}>Scheduled</Text>
-                    </View>
+                    <Text style={styles.badgeMuted}>Scheduled</Text>
                   </View>
                 </View>
               </View>
             )}
 
-            {/* ARROW CONNECTOR */}
-            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
+            {/* SCREEN 3: IMPACT VIEW */}
+            {activeTab === 'IMPACT' && (
+              <View style={styles.activeScreenBox}>
+                <View style={styles.screenTitleRow}>
+                  <Text style={styles.screenTitleSerif}>Impact View</Text>
+                  <Text style={styles.screenStepBadge}>STAGE 03</Text>
+                </View>
+                <Text style={styles.impactSubText}>Downstream chain reaction analysis</Text>
 
-            {/* 3. IMPACT VIEW SCREEN */}
-            {(activeTab === 'ALL' || activeTab === 'IMPACT') && (
-              <View style={styles.phoneScreenContainer}>
-                <Text style={styles.screenLabel}>IMPACT VIEW</Text>
-                <View style={styles.phoneMockup}>
-                  <Text style={styles.impactTitle}>Impact View</Text>
-                  <Text style={styles.impactSub}>What Check-in affected</Text>
+                {/* Hero Delay Card */}
+                <View style={styles.delayHeroCard}>
+                  <Text style={styles.delayHeroKicker}>LIKELY DELAY</Text>
+                  <Text style={styles.delayHeroTime}>2h 30m</Text>
+                  <Text style={styles.delayHeroLocation}>Arrival in Mumbai pushed from 18:00 to 20:30</Text>
+                </View>
 
-                  {/* Delay Hero Box */}
-                  <View style={styles.delayBox}>
-                    <Text style={styles.delayBoxLabel}>Likely Delay</Text>
-                    <Text style={styles.delayBoxHero}>2h 30m</Text>
-                    <Text style={styles.delayBoxLocation}>Arrival in Mumbai</Text>
+                <Text style={styles.affectedHeading}>AFFECTED DOWNSTREAM BOOKINGS</Text>
+
+                <View style={styles.impactItemCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.impactItemTitle}>Hotel Check-in Window</Text>
+                    <Text style={styles.impactItemSub}>Standard cut-off is 20:00 without notice</Text>
                   </View>
+                  <Text style={styles.badgeAmber}>At Risk</Text>
+                </View>
 
-                  <View style={styles.impactItemList}>
-                    <View style={styles.impactRow}>
-                      <Text style={styles.impactRowLabel}>Hotel Check-in</Text>
-                      <Text style={styles.tagAmber}>At Risk</Text>
-                    </View>
+                <View style={styles.impactItemCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.impactItemTitle}>Evening Dinner Activity</Text>
+                    <Text style={styles.impactItemSub}>Reserved 20:00 table at Marine Drive</Text>
+                  </View>
+                  <Text style={styles.badgeAmber}>At Risk</Text>
+                </View>
 
-                    <View style={styles.impactRow}>
-                      <Text style={styles.impactRowLabel}>Evening Activity</Text>
-                      <Text style={styles.tagAmber}>At Risk</Text>
-                    </View>
+                <TouchableOpacity
+                  style={styles.primaryTerracottaBtn}
+                  onPress={() => setActiveTab('RECOVERY')}
+                >
+                  <Text style={styles.primaryTerracottaBtnText}>View AI Recovery Plans ›</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* SCREEN 4: RECOVERY PLANS */}
+            {activeTab === 'RECOVERY' && (
+              <View style={styles.activeScreenBox}>
+                <View style={styles.screenTitleRow}>
+                  <Text style={styles.screenTitleSerif}>Recovery Plans</Text>
+                  <Text style={styles.screenStepBadge}>STAGE 04</Text>
+                </View>
+                <Text style={styles.impactSubText}>Deterministic rules-validated options</Text>
+
+                <View style={styles.recoveryOptionCard}>
+                  <View style={styles.recoveryOptionHeader}>
+                    <Text style={styles.recoveryOptionBadge}>OPTION 01 • RECOMMENDED</Text>
+                    <Text style={styles.badgeGreen}>Low Impact</Text>
+                  </View>
+                  <Text style={styles.recoveryOptionTitle}>Hold hotel check-in</Text>
+                  <Text style={styles.recoveryOptionDesc}>
+                    Auto-sends verified late arrival notice to hotel desk. Keeps original booking and incurs zero extra charges.
+                  </Text>
+                  <View style={styles.recoveryOptionFooter}>
+                    <Text style={styles.recoveryTimeText}>Expected response: 2:00 PM</Text>
+                    <TouchableOpacity
+                      style={styles.approveActionBtn}
+                      onPress={() => setActiveTab('TRACKER')}
+                    >
+                      <Text style={styles.approveActionBtnText}>Approve Action</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.recoveryOptionCard}>
+                  <View style={styles.recoveryOptionHeader}>
+                    <Text style={styles.recoveryOptionBadge}>OPTION 02</Text>
+                    <Text style={styles.badgeAmber}>Medium Impact</Text>
+                  </View>
+                  <Text style={styles.recoveryOptionTitle}>Alternative Evening Activity</Text>
+                  <Text style={styles.recoveryOptionDesc}>
+                    Reschedule dinner reservation to 21:30 or move activity to next morning.
+                  </Text>
+                  <View style={styles.recoveryOptionFooter}>
+                    <Text style={styles.recoveryTimeText}>Reschedule by 6:00 PM</Text>
+                    <TouchableOpacity
+                      style={styles.outlineActionBtn}
+                      onPress={() => setActiveTab('TRACKER')}
+                    >
+                      <Text style={styles.outlineActionBtnText}>Select Option</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.recoveryOptionCard}>
+                  <View style={styles.recoveryOptionHeader}>
+                    <Text style={styles.recoveryOptionBadge}>OPTION 03</Text>
+                    <Text style={styles.badgeGreen}>Low Impact</Text>
+                  </View>
+                  <Text style={styles.recoveryOptionTitle}>Early check-in request (Next Day)</Text>
+                  <Text style={styles.recoveryOptionDesc}>
+                    Request extended late checkout or early luggage storage.
+                  </Text>
+                  <View style={styles.recoveryOptionFooter}>
+                    <Text style={styles.recoveryTimeText}>12:00 PM next day</Text>
+                    <TouchableOpacity
+                      style={styles.outlineActionBtn}
+                      onPress={() => setActiveTab('TRACKER')}
+                    >
+                      <Text style={styles.outlineActionBtnText}>Select Option</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               </View>
             )}
 
-            {/* ARROW CONNECTOR */}
-            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
+            {/* SCREEN 5: ACTION TRACKER */}
+            {activeTab === 'TRACKER' && (
+              <View style={styles.activeScreenBox}>
+                <View style={styles.screenTitleRow}>
+                  <Text style={styles.screenTitleSerif}>Action Tracker</Text>
+                  <Text style={styles.screenStepBadge}>STAGE 05</Text>
+                </View>
+                <Text style={styles.impactSubText}>Stay on top of what matters</Text>
 
-            {/* 4. RECOVERY PLANS SCREEN */}
-            {(activeTab === 'ALL' || activeTab === 'RECOVERY') && (
-              <View style={styles.phoneScreenContainer}>
-                <Text style={styles.screenLabel}>RECOVERY PLANS</Text>
-                <View style={styles.phoneMockup}>
-                  <Text style={styles.recoveryTitle}>Recovery Plans</Text>
-                  <Text style={styles.recoverySub}>Recommended options</Text>
-
-                  <View style={styles.optionBox}>
-                    <Text style={styles.optionHeader}>Option 1</Text>
-                    <Text style={styles.optionAction}>Hold hotel check-in</Text>
-                    <View style={styles.optionMetaRow}>
-                      <Text style={styles.optionTime}>2:00 PM</Text>
-                      <Text style={styles.optionImpactGreen}>Impact: Low</Text>
-                    </View>
+                <View style={styles.trackerGroup}>
+                  <Text style={styles.trackerGroupHeading}>TO DO</Text>
+                  <View style={styles.trackerItemRow}>
+                    <Text style={styles.trackerBullet}>○</Text>
+                    <Text style={styles.trackerItemText}>Contact hotel desk for late arrival confirmation</Text>
                   </View>
-
-                  <View style={styles.optionBox}>
-                    <Text style={styles.optionHeader}>Option 2</Text>
-                    <Text style={styles.optionAction}>Alternative activity</Text>
-                    <View style={styles.optionMetaRow}>
-                      <Text style={styles.optionTime}>6:00 PM</Text>
-                      <Text style={styles.optionImpactAmber}>Impact: Medium</Text>
-                    </View>
+                  <View style={styles.trackerItemRow}>
+                    <Text style={styles.trackerBullet}>○</Text>
+                    <Text style={styles.trackerItemText}>Request late check-in hold</Text>
                   </View>
+                </View>
 
-                  <View style={styles.optionBox}>
-                    <Text style={styles.optionHeader}>Option 3</Text>
-                    <Text style={styles.optionAction}>Early check-in request</Text>
-                    <View style={styles.optionMetaRow}>
-                      <Text style={styles.optionTime}>12:00 PM</Text>
-                      <Text style={styles.optionImpactGreen}>Impact: Low</Text>
-                    </View>
+                <View style={styles.trackerGroup}>
+                  <Text style={styles.trackerGroupHeading}>IN PROGRESS</Text>
+                  <View style={styles.trackerItemRow}>
+                    <Text style={styles.trackerBulletAmber}>◐</Text>
+                    <Text style={styles.trackerItemText}>Track AI-804 live flight status</Text>
                   </View>
+                  <View style={styles.trackerItemRow}>
+                    <Text style={styles.trackerBulletAmber}>◐</Text>
+                    <Text style={styles.trackerItemText}>Monitor rail connection 146aved updates</Text>
+                  </View>
+                </View>
+
+                <View style={styles.trackerGroup}>
+                  <Text style={styles.trackerGroupHeading}>COMPLETED</Text>
+                  <View style={styles.trackerItemRow}>
+                    <Text style={styles.trackerBulletDone}>✓</Text>
+                    <Text style={[styles.trackerItemText, styles.trackerItemDone]}>Trip created & itinerary synced</Text>
+                  </View>
+                  <View style={styles.trackerItemRow}>
+                    <Text style={styles.trackerBulletDone}>✓</Text>
+                    <Text style={[styles.trackerItemText, styles.trackerItemDone]}>Hotel Taj reservation confirmed</Text>
+                  </View>
+                </View>
+
+                {/* Scope boundary footer note */}
+                <View style={styles.scopeNoteBox}>
+                  <Text style={styles.scopeNoteTitle}>SCOPE NOTE</Text>
+                  <Text style={styles.scopeNoteBody}>
+                    Actions requiring external portal logins use guided handoffs. Flight & rail data monitored via authorized endpoints.
+                  </Text>
                 </View>
               </View>
             )}
-
-            {/* ARROW CONNECTOR */}
-            {activeTab === 'ALL' && <Text style={styles.flowArrow}>→</Text>}
-
-            {/* 5. ACTION TRACKER SCREEN */}
-            {(activeTab === 'ALL' || activeTab === 'TRACKER') && (
-              <View style={styles.phoneScreenContainer}>
-                <Text style={styles.screenLabel}>ACTION TRACKER</Text>
-                <View style={styles.phoneMockup}>
-                  <Text style={styles.trackerTitle}>Action Tracker</Text>
-                  <Text style={styles.trackerSub}>Stay on top of what matters</Text>
-
-                  <View style={styles.trackerSection}>
-                    <Text style={styles.trackerCategory}>To Do</Text>
-                    <Text style={styles.trackerItem}>• Contact hotel</Text>
-                    <Text style={styles.trackerItem}>• Request early check-in</Text>
-                  </View>
-
-                  <View style={styles.trackerSection}>
-                    <Text style={styles.trackerCategory}>In Progress</Text>
-                    <Text style={styles.trackerItem}>• Track flight status</Text>
-                    <Text style={styles.trackerItem}>• Monitor rail update</Text>
-                  </View>
-
-                  <View style={styles.trackerSection}>
-                    <Text style={styles.trackerCategory}>Completed</Text>
-                    <Text style={[styles.trackerItem, styles.trackerItemDone]}>✓ Trip created</Text>
-                    <Text style={[styles.trackerItem, styles.trackerItemDone]}>✓ Hotel confirmed</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {/* SCOPE NOTES CARD */}
-            <View style={styles.scopeNotesCard}>
-              <Text style={styles.scopeNotesHeading}>SCOPE NOTES</Text>
-              <View style={styles.scopeNotesDivider} />
-
-              <View style={styles.scopeNoteBlock}>
-                <Text style={styles.scopeNoteText}>
-                  Flight live data only where access is confirmed
-                </Text>
-              </View>
-              <View style={styles.scopeNoteDividerSub} />
-
-              <View style={styles.scopeNoteBlock}>
-                <Text style={styles.scopeNoteText}>
-                  Rail updates may be replay / simulation unless authorized
-                </Text>
-              </View>
-              <View style={styles.scopeNoteDividerSub} />
-
-              <View style={styles.scopeNoteBlock}>
-                <Text style={styles.scopeNoteText}>
-                  Consumer-account rail automation out of scope where prohibited
-                </Text>
-              </View>
-              <View style={styles.scopeNoteDividerSub} />
-
-              <View style={styles.scopeNoteBlock}>
-                <Text style={styles.scopeNoteText}>
-                  Some actions are guided handoffs
-                </Text>
-              </View>
-            </View>
           </ScrollView>
-        </View>
 
-        {/* DECISION PHILOSOPHY ACCENT BANNER */}
-        <View style={styles.philosophyCard}>
-          <Text style={styles.philosophyKicker}>THE RECOVERY PRINCIPLE</Text>
-          <Text style={styles.philosophyTitle}>Keeping your existing plan is always a valid recommendation.</Text>
-          <Text style={styles.philosophyDesc}>
-            The best fix isn’t always a rebooking. TripSaathi compares preserving your existing plan against changing affected connections or continuing the next day — and the user approves exact actions.
-          </Text>
-        </View>
-      </ScrollView>
+          {/* AUTHENTIC MOBILE BOTTOM TAB NAVIGATION BAR */}
+          <View style={styles.bottomTabBar}>
+            {[
+              { id: 'DASHBOARD', label: 'Dashboard', icon: '🏠' },
+              { id: 'ADD_TRIP', label: 'Add Trip', icon: '➕' },
+              { id: 'IMPACT', label: 'Impact', icon: '⚠️' },
+              { id: 'RECOVERY', label: 'Recovery', icon: '💡' },
+              { id: 'TRACKER', label: 'Tracker', icon: '📋' },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  style={styles.tabBarItem}
+                  onPress={() => setActiveTab(tab.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tabBarIcon, isActive && styles.tabBarIconActive]}>
+                    {tab.icon}
+                  </Text>
+                  <Text style={[styles.tabBarLabel, isActive && styles.tabBarLabelActive]}>
+                    {tab.label}
+                  </Text>
+                  {isActive && <View style={styles.activeIndicatorDot} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-      {/* USER PROFILE MODAL (RESTYLED IN EDITORIAL CREAM/TERRACOTTA THEME) */}
+          {/* HOME INDICATOR BAR (Mobile Bezel) */}
+          <View style={styles.homeIndicatorBar} />
+        </SafeAreaView>
+      </View>
+
+      {/* USER PROFILE MODAL */}
       <Modal
         visible={profileModalVisible}
-        animationType="fade"
+        animationType="slide"
         transparent={true}
         onRequestClose={() => setProfileModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalTopBar}>
               <View>
-                <Text style={styles.modalKicker}>TRIPSAATHI ACCOUNT</Text>
+                <Text style={styles.modalKicker}>TRIPSAATHI ID</Text>
                 <Text style={styles.modalTitle}>Traveler Profile</Text>
               </View>
               <TouchableOpacity
                 onPress={() => setProfileModalVisible(false)}
-                style={styles.closeBtn}
+                style={styles.closeModalBtn}
               >
-                <Text style={styles.closeBtnText}>✕</Text>
+                <Text style={styles.closeModalBtnText}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              {/* Profile Avatar Header */}
-              <View style={styles.modalProfileHeader}>
+            <ScrollView contentContainerStyle={styles.modalScrollBody}>
+              {/* Profile Avatar */}
+              <View style={styles.modalAvatarBox}>
                 {user?.profile_pic ? (
-                  <Image source={{ uri: user.profile_pic }} style={styles.modalAvatarImg} />
+                  <Image source={{ uri: user.profile_pic }} style={styles.modalAvatarPic} />
                 ) : (
-                  <View style={styles.modalAvatarFallback}>
-                    <Text style={styles.modalAvatarFallbackText}>
+                  <View style={styles.modalAvatarInitials}>
+                    <Text style={styles.modalAvatarLetter}>
                       {user?.name ? user.name[0].toUpperCase() : 'U'}
                     </Text>
                   </View>
                 )}
-                <View style={styles.modalGoogleBadge}>
-                  <Text style={styles.modalGoogleBadgeText}>✓ Google Verified Identity</Text>
+                <View style={styles.verifiedIdentityPill}>
+                  <Text style={styles.verifiedIdentityPillText}>✓ Google Verified Identity</Text>
                 </View>
               </View>
 
-              {saveMessage && <Text style={styles.successBanner}>{saveMessage}</Text>}
+              {saveMessage && <Text style={styles.saveAlertSuccess}>{saveMessage}</Text>}
 
-              {/* Form Fields */}
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>FULL NAME</Text>
+              <View style={styles.modalFieldGroup}>
+                <Text style={styles.modalLabel}>FULL NAME</Text>
                 <TextInput
-                  style={styles.input}
+                  style={styles.modalInput}
                   value={name}
                   onChangeText={setName}
                   placeholder="Your full name"
@@ -678,22 +740,22 @@ export default function App() {
                 />
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>EMAIL ADDRESS (NON-EDITABLE)</Text>
-                <View style={styles.disabledInputContainer}>
+              <View style={styles.modalFieldGroup}>
+                <Text style={styles.modalLabel}>EMAIL ADDRESS (NON-EDITABLE)</Text>
+                <View style={styles.disabledInputRow}>
                   <TextInput
-                    style={[styles.input, styles.disabledInput]}
+                    style={[styles.modalInput, styles.disabledInput]}
                     value={email}
                     editable={false}
                   />
-                  <Text style={styles.lockIcon}>🔒</Text>
+                  <Text style={styles.lockBadge}>🔒</Text>
                 </View>
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
+              <View style={styles.modalFieldGroup}>
+                <Text style={styles.modalLabel}>PHONE NUMBER</Text>
                 <TextInput
-                  style={styles.input}
+                  style={styles.modalInput}
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="+91 9876543210"
@@ -702,19 +764,19 @@ export default function App() {
                 />
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>GENDER</Text>
-                <View style={styles.genderRow}>
+              <View style={styles.modalFieldGroup}>
+                <Text style={styles.modalLabel}>GENDER</Text>
+                <View style={styles.genderButtonRow}>
                   {['Male', 'Female', 'Other'].map((g) => (
                     <TouchableOpacity
                       key={g}
-                      style={[styles.genderBtn, gender === g && styles.genderBtnActive]}
+                      style={[styles.genderSelectBtn, gender === g && styles.genderSelectBtnActive]}
                       onPress={() => setGender(g)}
                     >
                       <Text
                         style={[
-                          styles.genderBtnText,
-                          gender === g && styles.genderBtnTextActive,
+                          styles.genderSelectText,
+                          gender === g && styles.genderSelectTextActive,
                         ]}
                       >
                         {g}
@@ -724,15 +786,15 @@ export default function App() {
                 </View>
               </View>
 
-              <View style={styles.fieldGroup}>
+              <View style={styles.modalFieldGroup}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={styles.fieldLabel}>DATE OF BIRTH (YYYY-MM-DD)</Text>
+                  <Text style={styles.modalLabel}>DATE OF BIRTH (YYYY-MM-DD)</Text>
                   {calculatedAge !== null && (
-                    <Text style={styles.ageBadge}>Age: {calculatedAge} yrs (Auto)</Text>
+                    <Text style={styles.ageAutoBadge}>Age: {calculatedAge} yrs (Auto)</Text>
                   )}
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={styles.modalInput}
                   value={dob}
                   onChangeText={handleDobChange}
                   placeholder="2000-05-15"
@@ -740,10 +802,10 @@ export default function App() {
                 />
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>HOME CITY / LOCATION</Text>
+              <View style={styles.modalFieldGroup}>
+                <Text style={styles.modalLabel}>HOME CITY / LOCATION</Text>
                 <TextInput
-                  style={styles.input}
+                  style={styles.modalInput}
                   value={homeLocation}
                   onChangeText={setHomeLocation}
                   placeholder="e.g. New Delhi, India"
@@ -751,712 +813,777 @@ export default function App() {
                 />
               </View>
 
-              {/* Action Buttons */}
               <TouchableOpacity
-                style={styles.saveBtn}
+                style={styles.saveProfileBtn}
                 onPress={handleSaveProfile}
                 disabled={savingProfile}
               >
                 {savingProfile ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.saveBtnText}>Save Profile Changes</Text>
+                  <Text style={styles.saveProfileBtnText}>Save Profile Changes</Text>
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-                <Text style={styles.signOutBtnText}>Sign Out from TripSaathi</Text>
+              <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+                <Text style={styles.signOutButtonText}>Sign Out from TripSaathi</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  // Desktop outer backdrop (centers the phone)
+  desktopBackdrop: {
+    flex: 1,
+    backgroundColor: '#EBE4DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+  },
+  fullScreenContainer: {
     flex: 1,
     backgroundColor: THEME.bg,
   },
-  header: {
+  // Top control bar for web preview
+  desktopControlBar: {
+    width: '100%',
+    maxWidth: 500,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  desktopControlLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  desktopBrand: {
+    fontFamily: SERIF_FONT,
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  desktopModeTag: {
+    fontSize: 11,
+    color: THEME.textSecondary,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  desktopViewToggle: {
+    backgroundColor: THEME.paper,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  desktopViewToggleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+
+  // The Phone Bezel Frame
+  phoneFrameWrapper: {
+    width: '100%',
+    maxWidth: 412,
+    height: '92vh',
+    maxHeight: 860,
+    backgroundColor: '#1E1B18', // Titanium bezel color
+    borderRadius: 44,
+    padding: 10,
+    borderWidth: 2,
+    borderColor: '#38332F',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.35,
+    shadowRadius: 35,
+    elevation: 20,
+    overflow: 'hidden',
+  },
+  phoneContentContainer: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: THEME.bg,
+  },
+
+  // Dynamic Island / Speaker notch
+  phoneDynamicIsland: {
+    height: 18,
+    width: 90,
+    backgroundColor: '#12100E',
+    alignSelf: 'center',
+    borderRadius: 10,
+    marginBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  phoneCameraDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#2A2622',
+  },
+  phoneSpeakerBar: {
+    width: 30,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#2A2622',
+  },
+
+  // Inner Phone Screen Canvas
+  phoneInnerCanvas: {
+    flex: 1,
+    backgroundColor: THEME.bg,
+    borderRadius: 34,
+    overflow: 'hidden',
+  },
+
+  // Mobile Status Bar
+  mobileStatusBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  mobileStatusTime: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  mobileStatusIcons: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  mobileStatusIconItem: {
+    fontSize: 11,
+  },
+
+  // Mobile Header
+  mobileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: THEME.border,
     backgroundColor: THEME.bg,
   },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  brandTitle: {
+  appHeaderTitle: {
     fontFamily: SERIF_FONT,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: THEME.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
-  kickerBadge: {
-    backgroundColor: THEME.primaryLight,
-    borderWidth: 1,
-    borderColor: THEME.primaryBorder,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  kickerBadgeText: {
-    color: THEME.primary,
+  appHeaderSub: {
     fontSize: 10,
     fontWeight: '700',
+    color: THEME.primary,
     letterSpacing: 0.8,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerSignInBtn: {
-    backgroundColor: THEME.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 6,
-  },
-  headerSignInBtnText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   avatarTouchable: {
     position: 'relative',
   },
   avatarImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
     borderColor: THEME.primary,
   },
   avatarFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarFallbackText: {
     color: '#fff',
+    fontSize: 15,
     fontWeight: '700',
-    fontSize: 16,
   },
   onlineDot: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 10,
-    height: 10,
+    width: 9,
+    height: 9,
     borderRadius: 5,
     backgroundColor: THEME.green,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: THEME.bg,
   },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-    alignItems: 'center',
-  },
-  heroSection: {
-    width: '100%',
-    maxWidth: 1100,
-    marginBottom: 28,
-  },
-  heroKicker: {
-    color: THEME.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    marginBottom: 8,
-  },
-  heroTitle: {
-    fontFamily: SERIF_FONT,
-    fontSize: 38,
-    lineHeight: 46,
-    color: THEME.text,
-    marginBottom: 14,
-    fontWeight: '600',
-  },
-  terracottaBar: {
-    width: 60,
-    height: 4,
+  headerDevBtn: {
     backgroundColor: THEME.primary,
-    marginBottom: 16,
-    borderRadius: 2,
-  },
-  heroSubtitle: {
-    fontSize: 16,
-    lineHeight: 25,
-    color: THEME.textSecondary,
-    maxWidth: 750,
-  },
-  promptBanner: {
-    width: '100%',
-    maxWidth: 1100,
-    backgroundColor: THEME.amberBg,
-    borderWidth: 1,
-    borderColor: 'rgba(194, 94, 26, 0.3)',
-    borderRadius: 8,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
-  },
-  promptIcon: {
-    fontSize: 20,
-  },
-  promptTitle: {
-    color: THEME.amber,
-    fontWeight: '700',
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  promptDesc: {
-    color: THEME.textSecondary,
-    fontSize: 12,
-  },
-  promptActionBtn: {
-    backgroundColor: THEME.primary,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 4,
-  },
-  promptActionBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  userStatusBar: {
-    width: '100%',
-    maxWidth: 1100,
-    backgroundColor: THEME.paper,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  userStatusGreeting: {
-    fontFamily: SERIF_FONT,
-    fontSize: 16,
-    fontWeight: '700',
-    color: THEME.text,
-    marginBottom: 2,
-  },
-  userStatusSub: {
-    fontSize: 12,
-    color: THEME.textSecondary,
-  },
-  userStatusEditBtn: {
-    backgroundColor: THEME.bgAlt,
-    borderWidth: 1,
-    borderColor: THEME.borderDark,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
     borderRadius: 6,
   },
-  userStatusEditBtnText: {
-    color: THEME.text,
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  authCard: {
-    width: '100%',
-    maxWidth: 540,
-    backgroundColor: THEME.paper,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 12,
-    padding: 26,
-    alignItems: 'center',
-    marginBottom: 32,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  authCardKicker: {
-    color: THEME.primary,
+  headerDevBtnText: {
+    color: '#fff',
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 6,
   },
-  authCardTitle: {
+
+  // Incomplete profile banner
+  incompleteProfilePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.amberBg,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(194, 94, 26, 0.2)',
+    gap: 8,
+  },
+  incompleteIcon: {
+    fontSize: 13,
+  },
+  incompleteText: {
+    flex: 1,
+    fontSize: 11,
+    color: THEME.amber,
+    fontWeight: '600',
+  },
+  incompleteArrow: {
+    fontSize: 14,
+    color: THEME.amber,
+    fontWeight: '700',
+  },
+
+  // Scroll Body
+  screenScrollView: {
+    flex: 1,
+  },
+  screenScrollContent: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+
+  // Auth Card
+  authCard: {
+    backgroundColor: THEME.paper,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  authKicker: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.primary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  authTitle: {
     fontFamily: SERIF_FONT,
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '700',
     color: THEME.text,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  authCardSub: {
-    fontSize: 13,
-    lineHeight: 20,
+  authDesc: {
+    fontSize: 11,
     color: THEME.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: 16,
+    marginBottom: 14,
   },
-  loginActionsContainer: {
+  authBtnContainer: {
     width: '100%',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  googleBtnContainer: {
-    minHeight: 44,
+  googleBtnBox: {
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickDevBtn: {
-    marginTop: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 6,
+  fastDevBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     backgroundColor: THEME.primaryLight,
     borderWidth: 1,
     borderColor: THEME.primaryBorder,
+    borderRadius: 6,
   },
-  quickDevBtnText: {
+  fastDevBtnText: {
     color: THEME.primary,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  tabContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+
+  // Active Screen Frame
+  activeScreenBox: {
     width: '100%',
-    maxWidth: 1100,
-    marginBottom: 20,
   },
-  tabBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: THEME.bgAlt,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  tabBtnActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
-  },
-  tabBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: THEME.textSecondary,
-  },
-  tabBtnTextActive: {
-    color: '#fff',
-  },
-  flowLayout: {
-    width: '100%',
-    maxWidth: 1100,
-    marginBottom: 36,
-  },
-  flowRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    paddingBottom: 16,
-  },
-  flowArrow: {
-    fontSize: 22,
-    color: THEME.primary,
-    alignSelf: 'center',
-    opacity: 0.6,
-  },
-  phoneScreenContainer: {
-    alignItems: 'center',
-    width: 220,
-  },
-  screenLabel: {
-    color: THEME.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  phoneMockup: {
-    width: '100%',
-    minHeight: 390,
-    backgroundColor: THEME.paper,
-    borderWidth: 1,
-    borderColor: THEME.borderDark,
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 5,
-    elevation: 1,
-  },
-  screenHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-  },
-  backArrow: {
-    fontSize: 14,
-    color: THEME.text,
-  },
-  screenHeaderTitle: {
-    fontFamily: SERIF_FONT,
-    fontSize: 14,
-    fontWeight: '700',
-    color: THEME.text,
-  },
-  inputRow: {
-    marginBottom: 10,
-  },
-  inputPrefix: {
-    fontSize: 10,
-    color: THEME.textMuted,
-    marginBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputFieldMock: {
+  screenTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 4,
+  },
+  screenTitleSerif: {
+    fontFamily: SERIF_FONT,
+    fontSize: 22,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  screenStepBadge: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: THEME.primary,
+    backgroundColor: THEME.primaryLight,
+    borderWidth: 1,
+    borderColor: THEME.primaryBorder,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    letterSpacing: 0.5,
+  },
+  impactSubText: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginBottom: 14,
+  },
+
+  // Form Fields (Add Trip)
+  formGroup: {
+    marginBottom: 12,
+  },
+  fieldKicker: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.textMuted,
+    letterSpacing: 0.6,
+    marginBottom: 4,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: THEME.paper,
     borderWidth: 1,
     borderColor: THEME.border,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    backgroundColor: THEME.paperSubtle,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  inputAirportCode: {
+  airportCode: {
+    fontSize: 14,
     fontWeight: '800',
-    fontSize: 12,
     color: THEME.text,
   },
-  inputCityName: {
-    fontSize: 11,
+  cityName: {
+    fontSize: 13,
     color: THEME.textSecondary,
   },
-  inputDateText: {
-    fontSize: 11,
-    color: THEME.text,
+  inputRegularText: {
+    fontSize: 13,
     fontWeight: '600',
+    color: THEME.text,
   },
-  calendarIcon: {
-    fontSize: 11,
+  inputIconRight: {
+    fontSize: 13,
+    color: THEME.textSecondary,
   },
-  chevronIcon: {
-    fontSize: 14,
-    color: THEME.textMuted,
-  },
-  terracottaBtn: {
+  primaryTerracottaBtn: {
     backgroundColor: THEME.primary,
-    borderRadius: 6,
-    paddingVertical: 10,
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 14,
   },
-  terracottaBtnText: {
+  primaryTerracottaBtnText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
-  dashboardTitle: {
-    fontFamily: SERIF_FONT,
-    fontSize: 15,
-    fontWeight: '700',
-    color: THEME.text,
-    marginBottom: 6,
-  },
-  dashboardSubtabs: {
+
+  // Subtabs (Dashboard)
+  subtabsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
     borderBottomWidth: 1,
     borderBottomColor: THEME.border,
     paddingBottom: 6,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  subtabItem: {
-    fontSize: 10,
-    color: THEME.textMuted,
-    fontWeight: '600',
-  },
-  subtabItemActive: {
-    color: THEME.primary,
-    borderBottomWidth: 2,
-    borderBottomColor: THEME.primary,
+  subtabBtn: {
     paddingBottom: 4,
   },
-  routeHeader: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: THEME.text,
+  subtabBtnActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: THEME.primary,
   },
-  routeDate: {
-    fontSize: 10,
-    color: THEME.textSecondary,
-    marginBottom: 10,
-  },
-  segmentList: {
-    gap: 8,
-  },
-  segmentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.paperSubtle,
-  },
-  segmentIcon: {
+  subtabText: {
     fontSize: 12,
-  },
-  segmentName: {
-    fontSize: 11,
     fontWeight: '600',
-    color: THEME.text,
-  },
-  segmentMeta: {
-    fontSize: 9,
     color: THEME.textMuted,
   },
-  tagGreen: {
-    fontSize: 9,
+  subtabTextActive: {
+    color: THEME.primary,
     fontWeight: '700',
-    color: THEME.green,
-    backgroundColor: THEME.greenBg,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
   },
-  tagAmber: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: THEME.amber,
-    backgroundColor: THEME.amberBg,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
+
+  routeBox: {
+    backgroundColor: THEME.paper,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    padding: 12,
+    marginBottom: 12,
   },
-  tagMuted: {
-    fontSize: 9,
-    color: THEME.textMuted,
-    paddingHorizontal: 4,
-  },
-  impactTitle: {
+  routeTitle: {
     fontFamily: SERIF_FONT,
     fontSize: 15,
     fontWeight: '700',
     color: THEME.text,
     marginBottom: 2,
   },
-  impactSub: {
-    fontSize: 10,
+  routeDateText: {
+    fontSize: 11,
     color: THEME.textSecondary,
-    marginBottom: 12,
   },
-  delayBox: {
-    borderWidth: 1,
-    borderColor: THEME.borderDark,
-    borderRadius: 6,
-    padding: 10,
+
+  // Segments
+  segmentList: {
+    gap: 8,
+  },
+  segmentCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
-    backgroundColor: THEME.paperSubtle,
+    backgroundColor: THEME.paper,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    padding: 10,
+    gap: 10,
   },
-  delayBoxLabel: {
+  segmentCardAlert: {
+    borderColor: THEME.primary,
+    backgroundColor: '#FFFBF9',
+  },
+  segmentIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: THEME.paperSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentEmoji: {
+    fontSize: 15,
+  },
+  segmentName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  segmentDetail: {
     fontSize: 10,
     color: THEME.textSecondary,
+  },
+  viewImpactHint: {
+    fontSize: 9,
+    color: THEME.primary,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+
+  // Badges
+  badgeGreen: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.green,
+    backgroundColor: THEME.greenBg,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  badgeAmber: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.amber,
+    backgroundColor: THEME.amberBg,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  badgeMuted: {
+    fontSize: 10,
+    color: THEME.textMuted,
+    paddingHorizontal: 6,
+  },
+
+  // Impact View
+  delayHeroCard: {
+    backgroundColor: THEME.paper,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: THEME.primaryBorder,
+    padding: 14,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  delayHeroKicker: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.primary,
+    letterSpacing: 1,
     marginBottom: 2,
   },
-  delayBoxHero: {
+  delayHeroTime: {
     fontFamily: SERIF_FONT,
-    fontSize: 26,
+    fontSize: 34,
     fontWeight: '800',
     color: THEME.primary,
     marginVertical: 2,
   },
-  delayBoxLocation: {
+  delayHeroLocation: {
+    fontSize: 11,
+    color: THEME.textSecondary,
+    textAlign: 'center',
+  },
+  affectedHeading: {
     fontSize: 10,
+    fontWeight: '700',
     color: THEME.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: 8,
   },
-  impactItemList: {
-    gap: 8,
-  },
-  impactRow: {
+  impactItemCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.paperSubtle,
+    backgroundColor: THEME.paper,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    padding: 12,
+    marginBottom: 8,
   },
-  impactRowLabel: {
-    fontSize: 11,
-    color: THEME.text,
-    fontWeight: '600',
-  },
-  recoveryTitle: {
-    fontFamily: SERIF_FONT,
-    fontSize: 15,
+  impactItemTitle: {
+    fontSize: 12,
     fontWeight: '700',
     color: THEME.text,
     marginBottom: 2,
   },
-  recoverySub: {
+  impactItemSub: {
     fontSize: 10,
     color: THEME.textSecondary,
-    marginBottom: 10,
   },
-  optionBox: {
+
+  // Recovery Options
+  recoveryOptionCard: {
+    backgroundColor: THEME.paper,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: THEME.border,
-    borderRadius: 6,
-    padding: 8,
-    marginBottom: 8,
-    backgroundColor: THEME.paperSubtle,
+    padding: 12,
+    marginBottom: 10,
   },
-  optionHeader: {
+  recoveryOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  recoveryOptionBadge: {
     fontSize: 10,
     fontWeight: '700',
     color: THEME.primary,
-    marginBottom: 2,
+    letterSpacing: 0.5,
   },
-  optionAction: {
-    fontSize: 11,
-    fontWeight: '600',
+  recoveryOptionTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 14,
+    fontWeight: '700',
     color: THEME.text,
     marginBottom: 4,
   },
-  optionMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  optionTime: {
-    fontSize: 10,
-    color: THEME.textSecondary,
-  },
-  optionImpactGreen: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: THEME.green,
-  },
-  optionImpactAmber: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: THEME.amber,
-  },
-  trackerTitle: {
-    fontFamily: SERIF_FONT,
-    fontSize: 15,
-    fontWeight: '700',
-    color: THEME.text,
-    marginBottom: 2,
-  },
-  trackerSub: {
-    fontSize: 10,
-    color: THEME.textSecondary,
-    marginBottom: 10,
-  },
-  trackerSection: {
-    marginBottom: 10,
-  },
-  trackerCategory: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: THEME.primary,
-    marginBottom: 3,
-    textTransform: 'uppercase',
-  },
-  trackerItem: {
-    fontSize: 10,
-    color: THEME.textSecondary,
-    marginBottom: 2,
-  },
-  trackerItemDone: {
-    color: THEME.green,
-  },
-  scopeNotesCard: {
-    width: 200,
-    backgroundColor: THEME.paperSubtle,
-    borderWidth: 1,
-    borderColor: THEME.borderDark,
-    borderRadius: 14,
-    padding: 16,
-  },
-  scopeNotesHeading: {
-    color: THEME.primary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 8,
-  },
-  scopeNotesDivider: {
-    height: 2,
-    backgroundColor: THEME.primary,
-    marginBottom: 12,
-  },
-  scopeNoteBlock: {
-    marginVertical: 4,
-  },
-  scopeNoteText: {
+  recoveryOptionDesc: {
     fontSize: 11,
     lineHeight: 16,
     color: THEME.textSecondary,
+    marginBottom: 10,
   },
-  scopeNoteDividerSub: {
-    height: 1,
-    backgroundColor: THEME.border,
-    marginVertical: 8,
+  recoveryOptionFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: THEME.paperSubtle,
+    paddingTop: 8,
   },
-  philosophyCard: {
-    width: '100%',
-    maxWidth: 1100,
-    backgroundColor: THEME.paper,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 12,
-    padding: 24,
+  recoveryTimeText: {
+    fontSize: 10,
+    color: THEME.textMuted,
   },
-  philosophyKicker: {
-    color: THEME.primary,
+  approveActionBtn: {
+    backgroundColor: THEME.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  approveActionBtnText: {
+    color: '#fff',
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 6,
   },
-  philosophyTitle: {
-    fontFamily: SERIF_FONT,
-    fontSize: 20,
-    fontWeight: '700',
+  outlineActionBtn: {
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  outlineActionBtnText: {
     color: THEME.text,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // Action Tracker
+  trackerGroup: {
+    backgroundColor: THEME.paper,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    padding: 12,
+    marginBottom: 10,
+  },
+  trackerGroupHeading: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.primary,
+    letterSpacing: 0.8,
     marginBottom: 8,
   },
-  philosophyDesc: {
-    fontSize: 13,
-    lineHeight: 21,
+  trackerItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  trackerBullet: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  trackerBulletAmber: {
+    fontSize: 12,
+    color: THEME.amber,
+  },
+  trackerBulletDone: {
+    fontSize: 12,
+    color: THEME.green,
+    fontWeight: '800',
+  },
+  trackerItemText: {
+    fontSize: 11,
+    color: THEME.text,
+    flex: 1,
+  },
+  trackerItemDone: {
+    color: THEME.textMuted,
+    textDecorationLine: 'line-through',
+  },
+  scopeNoteBox: {
+    backgroundColor: THEME.paperSubtle,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 6,
+  },
+  scopeNoteTitle: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: THEME.primary,
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  scopeNoteBody: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    lineHeight: 14,
+  },
+
+  // Bottom Navigation Bar
+  bottomTabBar: {
+    flexDirection: 'row',
+    backgroundColor: THEME.paper,
+    borderTopWidth: 1,
+    borderTopColor: THEME.border,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  tabBarItem: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    position: 'relative',
+  },
+  tabBarIcon: {
+    fontSize: 18,
+    marginBottom: 2,
+    opacity: 0.6,
+  },
+  tabBarIconActive: {
+    opacity: 1,
+  },
+  tabBarLabel: {
+    fontSize: 9,
+    fontWeight: '600',
     color: THEME.textSecondary,
   },
+  tabBarLabelActive: {
+    color: THEME.primary,
+    fontWeight: '700',
+  },
+  activeIndicatorDot: {
+    position: 'absolute',
+    bottom: -2,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: THEME.primary,
+  },
+
+  // Home Indicator Bar
+  homeIndicatorBar: {
+    width: 120,
+    height: 4,
+    backgroundColor: '#D1C9BE',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginVertical: 4,
+  },
+
+  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(30, 27, 24, 0.65)',
@@ -1464,187 +1591,187 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
-  modalContainer: {
+  modalCard: {
     backgroundColor: THEME.paper,
-    borderRadius: 14,
+    borderRadius: 16,
     width: '100%',
-    maxWidth: 520,
-    maxHeight: '90%',
+    maxWidth: 380,
+    maxHeight: '88%',
     borderWidth: 1,
     borderColor: THEME.borderDark,
     overflow: 'hidden',
   },
-  modalHeader: {
+  modalTopBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingVertical: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: THEME.border,
     backgroundColor: THEME.bg,
   },
   modalKicker: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: THEME.primary,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     marginBottom: 2,
   },
   modalTitle: {
     fontFamily: SERIF_FONT,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: THEME.text,
   },
-  closeBtn: {
+  closeModalBtn: {
     padding: 6,
   },
-  closeBtnText: {
-    fontSize: 16,
+  closeModalBtnText: {
+    fontSize: 15,
     color: THEME.textSecondary,
     fontWeight: '700',
   },
-  modalScroll: {
-    padding: 22,
+  modalScrollBody: {
+    padding: 18,
   },
-  modalProfileHeader: {
+  modalAvatarBox: {
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 16,
   },
-  modalAvatarImg: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 3,
+  modalAvatarPic: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
     borderColor: THEME.primary,
     marginBottom: 8,
   },
-  modalAvatarFallback: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  modalAvatarInitials: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
-  modalAvatarFallbackText: {
+  modalAvatarLetter: {
     color: '#fff',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
   },
-  modalGoogleBadge: {
+  verifiedIdentityPill: {
     backgroundColor: THEME.primaryLight,
     borderColor: THEME.primaryBorder,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
-  modalGoogleBadgeText: {
+  verifiedIdentityPillText: {
     color: THEME.primary,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
-  successBanner: {
+  saveAlertSuccess: {
     backgroundColor: THEME.greenBg,
     borderColor: THEME.green,
     borderWidth: 1,
     color: THEME.green,
-    padding: 10,
+    padding: 8,
     borderRadius: 6,
     textAlign: 'center',
-    marginBottom: 16,
-    fontSize: 13,
+    marginBottom: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
-  fieldGroup: {
-    marginBottom: 14,
+  modalFieldGroup: {
+    marginBottom: 12,
   },
-  fieldLabel: {
-    fontSize: 11,
+  modalLabel: {
+    fontSize: 10,
     fontWeight: '700',
     color: THEME.textSecondary,
-    marginBottom: 6,
-    letterSpacing: 0.6,
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
-  input: {
+  modalInput: {
     backgroundColor: THEME.paperSubtle,
     borderWidth: 1,
     borderColor: THEME.borderDark,
     borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     color: THEME.text,
-    fontSize: 14,
+    fontSize: 13,
   },
-  disabledInputContainer: {
+  disabledInputRow: {
     position: 'relative',
     justifyContent: 'center',
   },
   disabledInput: {
     backgroundColor: THEME.bgAlt,
     color: THEME.textMuted,
-    paddingRight: 36,
+    paddingRight: 32,
   },
-  lockIcon: {
+  lockBadge: {
     position: 'absolute',
-    right: 12,
-    fontSize: 14,
+    right: 10,
+    fontSize: 12,
   },
-  genderRow: {
+  genderButtonRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
-  genderBtn: {
+  genderSelectBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
     borderRadius: 6,
     backgroundColor: THEME.paperSubtle,
     borderWidth: 1,
     borderColor: THEME.borderDark,
   },
-  genderBtnActive: {
+  genderSelectBtnActive: {
     backgroundColor: THEME.primaryLight,
     borderColor: THEME.primary,
   },
-  genderBtnText: {
+  genderSelectText: {
     color: THEME.textSecondary,
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 12,
   },
-  genderBtnTextActive: {
+  genderSelectTextActive: {
     color: THEME.primary,
     fontWeight: '700',
   },
-  ageBadge: {
+  ageAutoBadge: {
     color: THEME.green,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
-  saveBtn: {
+  saveProfileBtn: {
     backgroundColor: THEME.primary,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 6,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-  signOutBtn: {
-    paddingVertical: 12,
     alignItems: 'center',
     marginTop: 8,
   },
-  signOutBtnText: {
+  saveProfileBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
+  signOutButton: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  signOutButtonText: {
     color: THEME.primary,
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 12,
   },
 });
