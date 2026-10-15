@@ -16,7 +16,8 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
-const BACKEND_URL = 'http://localhost:7000';
+const DEV_MACHINE_IP = '192.168.1.11';
+const BACKEND_URL = Platform.OS === 'web' ? 'http://localhost:7000' : `http://${DEV_MACHINE_IP}:7000`;
 const GOOGLE_CLIENT_ID = '258416843143-ahnf9rasq8blnra0gcq7rr5cn77s9qsd.apps.googleusercontent.com';
 
 // Warm Editorial Theme Palette matching TripSaathi Recovery Story
@@ -896,7 +897,7 @@ const styles = StyleSheet.create({
   phoneFrameWrapper: {
     width: '100%',
     maxWidth: 412,
-    height: '92vh',
+    height: Platform.OS === 'web' ? '92vh' : '100%',
     maxHeight: 860,
     backgroundColor: '#1E1B18', // Titanium bezel color
     borderRadius: 44,
