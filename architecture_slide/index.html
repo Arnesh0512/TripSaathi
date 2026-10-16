@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripSaathi • System Architecture Flowchart</title>
+  <!-- Google Fonts: Editorial Serif & Clean Geometric Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-canvas: #F8F5EE;
+      --bg-card: #FFFFFF;
+      --bg-card-alt: #FCFAF6;
+      --border-color: #E6DFD3;
+      --border-subtle: #EFE9DE;
+      
+      --terracotta: #A83827;
+      --terracotta-hover: #8F2E20;
+      --terracotta-light: rgba(168, 56, 39, 0.08);
+      --terracotta-border: rgba(168, 56, 39, 0.25);
+      
+      --text-main: #1D1B18;
+      --text-muted: #6B645B;
+      --text-light: #968E82;
+      
+      --accent-green: #236B3B;
+      --accent-green-bg: #EAF4EE;
+      --accent-amber: #BD5B18;
+      --accent-amber-bg: #FDF3EB;
+      --accent-blue: #0A6C9B;
+      --accent-blue-bg: #E8F4FA;
+      --accent-purple: #6B3BA7;
+      --accent-purple-bg: #F3ECFA;
+
+      --font-serif: 'Playfair Display', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #12100E;
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    /* TOP PRESENTATION BAR */
+    .pres-controls-bar {
+      width: 100%;
+      max-width: 1680px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      margin-bottom: 12px;
+      color: #A39D93;
+      font-size: 13px;
+    }
+
+    .pres-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-live {
+      background: rgba(35, 107, 59, 0.2);
+      border: 1px solid var(--accent-green);
+      color: #48C774;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .badge-live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #48C774;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #48C774;
+    }
+
+    .pres-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-sim-delay {
+      background: var(--terracotta);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(168, 56, 39, 0.3);
+    }
+
+    .btn-sim-delay:hover {
+      background: var(--terracotta-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-sim-delay.active {
+      background: var(--accent-amber);
+      box-shadow: 0 0 15px rgba(189, 91, 24, 0.6);
+    }
+
+    .btn-fullscreen {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #EFE9DE;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-fullscreen:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* 16:9 SLIDE CONTAINER */
+    .slide-wrapper {
+      width: 100%;
+      max-width: 1680px;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-canvas);
+      border-radius: 14px;
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      padding: 34px 44px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #36322C;
+    }
+
+    /* BACKGROUND SUBTLE WATERMARK PATTERN */
+    .slide-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        radial-gradient(circle at 20px 20px, rgba(168, 56, 39, 0.03) 2px, transparent 0);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* SLIDE HEADER */
+    .slide-header {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 22px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .slide-title-group {
+      max-width: 1100px;
+    }
+
+    .slide-kicker {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.8px;
+      color: var(--terracotta);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-kicker::after {
+      content: '';
+      display: inline-block;
+      width: 28px;
+      height: 2px;
+      background: var(--terracotta);
+    }
+
+    .slide-title {
+      font-family: var(--font-serif);
+      font-size: 30px;
+      line-height: 1.18;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .slide-subtitle {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .slide-brand-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 40px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .brand-logo-text {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-main);
+    }
+
+    .brand-logo-tag {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: var(--terracotta);
+      background: var(--terracotta-light);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* MAIN FLOWCHART GRID CANVAS */
+    .flow-canvas {
+      flex: 1;
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1.15fr 0.95fr 1.1fr 1fr 1.15fr 1.15fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    /* COLUMN / LANE STYLING */
+    .flow-lane {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .lane-label-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .lane-phase-num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-light);
+      letter-spacing: 0.5px;
+    }
+
+    .lane-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-main);
+    }
+
+    /* CARD NODES */
+    .flow-node {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 13px 14px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.02);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .flow-node:hover {
+      border-color: var(--terracotta);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(168, 56, 39, 0.08);
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+      gap: 6px;
+    }
+
+    .node-icon-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .node-icon {
+      font-size: 15px;
+    }
+
+    .node-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.25;
+    }
+
+    .node-badge {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-tf {
+      background: var(--accent-blue-bg);
+      color: var(--accent-blue);
+      border: 1px solid rgba(10, 108, 155, 0.25);
+    }
+
+    .badge-llm {
+      background: var(--accent-purple-bg);
+      color: var(--accent-purple);
+      border: 1px solid rgba(107, 59, 167, 0.25);
+    }
+
+    .badge-rules {
+      background: var(--accent-green-bg);
+      color: var(--accent-green);
+      border: 1px solid rgba(35, 107, 59, 0.25);
+    }
+
+    .badge-alert {
+      background: var(--accent-amber-bg);
+      color: var(--accent-amber);
+      border: 1px solid rgba(189, 91, 24, 0.3);
+    }
+
+    .badge-terra {
+      background: var(--terracotta-light);
+      color: var(--terracotta);
+      border: 1px solid var(--terracotta-border);
+    }
+
+    .node-desc {
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    /* PAYLOAD BOX / CODE SNIPPET VISUAL */
+    .payload-chip {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      color: #38332E;
+      line-height: 1.4;
+      margin-top: auto;
+    }
+
+    .payload-chip b {
+      color: var(--terracotta);
+    }
+
+    /* CONNECTOR ARROWS (CSS & SVG) */
+    .arrow-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--terracotta);
+      font-weight: 800;
+      font-size: 13px;
+      opacity: 0.7;
+      margin: -4px 0;
+    }
+
+    /* DECISION GATEWAY NODE */
+    .decision-node {
+      background: #FFFFFF;
+      border: 1.5px dashed var(--accent-amber);
+      position: relative;
+    }
+
+    .decision-node.delay-active {
+      border-style: solid;
+      background: #FFFDF9;
+      border-color: var(--terracotta);
+      box-shadow: 0 0 16px rgba(168, 56, 39, 0.18);
+    }
+
+    /* HIGHLIGHT PULSE FOR DELAY SIMULATION */
+    @keyframes pulseAlert {
+      0% { box-shadow: 0 0 0 0 rgba(168, 56, 39, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(168, 56, 39, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(168, 56, 39, 0); }
+    }
+
+    .alert-pulse {
+      animation: pulseAlert 2s infinite;
+      border-color: var(--terracotta) !important;
+    }
+
+    /* RECOVERY PLAN OPTIONS IN LANE 6 */
+    .plan-option-mini {
+      background: #FAF7F2;
+      border-left: 3px solid var(--accent-green);
+      border-radius: 4px;
+      padding: 5px 8px;
+      margin-bottom: 5px;
+      font-size: 10px;
+    }
+
+    .plan-option-mini.recommended {
+      background: #F3F9F5;
+      border-left-color: var(--accent-green);
+    }
+
+    .plan-opt-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 2px;
+    }
+
+    .plan-opt-meta {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+
+    /* SLIDE FOOTER BANNER */
+    .slide-footer-bar {
+      position: relative;
+      z-index: 2;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .footer-principle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+    }
+
+    .principle-tag {
+      background: var(--terracotta);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 9.5px;
+      letter-spacing: 0.6px;
+    }
+
+    .footer-stats {
+      display: flex;
+      gap: 20px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+    }
+
+    .footer-stats span b {
+      color: var(--terracotta);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PRESENTATION CONTROLS -->
+  <div class="pres-controls-bar">
+    <div class="pres-left">
+      <span class="badge-live">LIVE ARCHITECTURE DEPLOYMENT</span>
+      <span>• Single-Slide Interactive System Flowchart</span>
+    </div>
+    <div class="pres-actions">
+      <button id="toggleDelayBtn" class="btn-sim-delay" onclick="toggleDelaySimulation()">
+        <span id="delayIcon">⚡</span>
+        <span id="delayBtnText">Simulate 2h 30m Flight Delay</span>
+      </button>
+      <button class="btn-fullscreen" onclick="toggleFullscreen()">⛶ Fullscreen Slide</button>
+    </div>
+  </div>
+
+  <!-- 16:9 PRESENTATION SLIDE -->
+  <div class="slide-wrapper" id="slideCanvas">
+
+    <!-- SLIDE HEADER -->
+    <div class="slide-header">
+      <div class="slide-title-group">
+        <div class="slide-kicker">TRIPSAATHI CORE ARCHITECTURE • MULTI-MODAL RECOVERY PIPELINE</div>
+        <h1 class="slide-title">Autonomous Journey Recovery: From Ingestion to Delay Resolution</h1>
+        <p class="slide-subtitle">
+          How <b>TinyFish Web Agents</b>, <b>ChatGPT Ingestion</b>, and a <b>Deterministic Rules Engine</b> automate connected flight, stay, and transit recovery.
+        </p>
+      </div>
+
+      <div class="slide-brand-pill">
+        <span style="font-size: 18px;">✈️</span>
+        <div>
+          <div class="brand-logo-text">TripSaathi</div>
+          <div class="brand-logo-tag">RECOVER THE JOURNEY</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MULTI-LANE INTERCONNECTED FLOWCHART CANVAS -->
+    <div class="flow-canvas">
+
+      <!-- LANE 1: DUAL INGESTION PATHWAYS -->
+      <div class="flow-lane">
+        <div class="lane-label-bar">
+          <span class="lane-phase-num">01</span>
+          <span class="lane-title">Input & Booking</span>
+        </div>
+
+        <!-- Path 1A: Search & Autofill -->
+        <div class="flow-node">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">🔍</span>
+              <span class="node-title">New Search Request</span>
+            </div>
+            <span class="node-badge badge-tf">TinyFish</span>
+          </div>
+          <div class="node-desc">
+            User inputs Origin, Destination, Dates, and Budget limits.
+          </div>
+          <div class="payload-chip">
+            <b>TinyFish Crawler:</b> Searches live fares on IndiGo & Air India portals; surfaces optimal options within budget.
+          </div>
+        </div>
+
+        <div class="arrow-divider">↓</div>
+
+        <!-- Autofill Guided Handoff -->
+        <div class="flow-node">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">⚡</span>
+              <span class="node-title">1-Click Autofill Handoff</span>
+            </div>
+            <span class="node-badge badge-terra">Guided</span>
+          </div>
+          <div class="node-desc">
+            Deep-links pre-fill traveler profile (name, DOB, phone). User checks out safely on vendor portal.
+          </div>
+        </div>
+
+        <!-- Path 1B: Pre-Booked Ingestion -->
+        <div class="flow-node" style="margin-top: auto;">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">📄</span>
+              <span class="node-title">Or: Pre-Booked Ticket</span>
+            </div>
+            <span class="node-badge badge-terra">Input</span>
+          </div>
+          <div class="node-desc">
+            User uploads existing PDF e-ticket, enters PNR, or forwards booking confirmation.
+          </div>
+        </div>
+      </div>
+
+      <!-- LANE 2: CHATGPT API INGESTION -->
+      <div class="flow-lane">
+        <div class="lane-label-bar">
+          <span class="lane-phase-num">02</span>
+          <span class="lane-title">LLM Ticket Parsing</span>
+        </div>
+
+        <div class="flow-node" style="flex: 1;">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">🧠</span>
+              <span class="node-title">ChatGPT API Parser</span>
+            </div>
+            <span class="node-badge badge-llm">gpt-4o</span>
+          </div>
+          <div class="node-desc">
+            Ingests unstructured tickets, OCR scans, and emails. Extracts multi-modal chronology:
+          </div>
+
+          <div class="payload-chip" style="margin-bottom: 8px;">
+            <code>
+              • Flight: AI-804 (DEL→BOM)<br>
+              &nbsp;&nbsp;Dep: 14:15 | Arr: 16:30<br>
+              • Stay: Taj Lands End<br>
+              &nbsp;&nbsp;Check-in Cutoff: <b>20:00</b><br>
+              • Transit: BOM T2 Chauffeur<br>
+              • Event: Marine Drive Dinner
+            </code>
+          </div>
+
+          <div class="node-desc" style="font-size: 10px; margin-bottom: 0;">
+            <b>MongoDB Atlas:</b> Saves verified itinerary document into <code>trips</code> & <code>bookings</code> collections.
+          </div>
+        </div>
+      </div>
+
+      <!-- LANE 3: TINYFISH MONITORING LOOP -->
+      <div class="flow-lane">
+        <div class="lane-label-bar">
+          <span class="lane-phase-num">03</span>
+          <span class="lane-title">Status Monitoring</span>
+        </div>
+
+        <div class="flow-node">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">🛰️</span>
+              <span class="node-title">TinyFish Monitor</span>
+            </div>
+            <span class="node-badge badge-tf">Crawler</span>
+          </div>
+          <div class="node-desc">
+            Autonomous background worker polling live carrier flight radar & gate boards.
+          </div>
+        </div>
+
+        <div class="arrow-divider">↓</div>
+
+        <!-- Decision Gateway -->
+        <div class="flow-node decision-node" id="delayGatewayNode">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon" id="gatewayIcon">⏱️</span>
+              <span class="node-title" id="gatewayTitle">Deviation Check</span>
+            </div>
+            <span class="node-badge" id="gatewayBadge">Nominal</span>
+          </div>
+          <div class="node-desc" id="gatewayDesc">
+            All flights running on schedule. Passive monitoring active.
+          </div>
+          <div class="payload-chip" id="gatewayChip">
+            Delta T = <b>0m</b>. No downstream conflicts.
+          </div>
+        </div>
+      </div>
+
+      <!-- LANE 4: DOWNSTREAM IMPACT ENGINE -->
+      <div class="flow-lane">
+        <div class="lane-label-bar">
+          <span class="lane-phase-num">04</span>
+          <span class="lane-title">Downstream Impact</span>
+        </div>
+
+        <div class="flow-node" id="impactNode" style="flex: 1;">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">⚠️</span>
+              <span class="node-title">Chain Reaction Engine</span>
+            </div>
+            <span class="node-badge badge-alert" id="impactBadge">Standing By</span>
+          </div>
+          <div class="node-desc">
+            Calculates cascading domino fallout across disconnected downstream providers.
+          </div>
+
+          <div class="payload-chip" id="impactDetailsChip" style="margin-bottom: 10px;">
+            <b>Downstream Analysis:</b><br>
+            • Flight: <span id="flightStat">On Time (16:30 Arr)</span><br>
+            • Taj Arrival: <span id="hotelStat">17:45 (Safe)</span><br>
+            • 20:00 Cut-off: <span id="cutoffStat" style="color:var(--accent-green);">Compliant (+2h 15m buffer)</span>
+          </div>
+
+          <div class="node-desc" style="font-size: 10px; color: var(--text-light); margin-top: auto;">
+            Triggers when departure deviation exceeds connection safety threshold (> 30 mins).
+          </div>
+        </div>
+      </div>
+
+      <!-- LANE 5: AUTONOMOUS POLICY INTELLIGENCE -->
+      <div class="flow-lane">
+        <div class="lane-label-bar">
+          <span class="lane-phase-num">05</span>
+          <span class="lane-title">Policy Intelligence</span>
+        </div>
+
+        <div class="flow-node" style="flex: 1;" id="policyLaneNode">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">🤖</span>
+              <span class="node-title">TinyFish Web Scout</span>
+            </div>
+            <span class="node-badge badge-tf">Web Agent</span>
+          </div>
+          <div class="node-desc">
+            Crawls permitted vendor portals to extract fine-print policies without API friction:
+          </div>
+
+          <div class="payload-chip" style="margin-bottom: 8px;">
+            <b>Hotel Taj Desk Policy:</b><br>
+            <i>"Complimentary late arrival hold up to 23:00 if desk is notified before 20:00."</i>
+          </div>
+
+          <div class="payload-chip">
+            <b>Dinner Reservation Policy:</b><br>
+            <i>"Free cancellation or slot reschedule allowed up to 1h prior."</i>
+          </div>
+        </div>
+      </div>
+
+      <!-- LANE 6: DETERMINISTIC PLAN & USER APPROVAL -->
+      <div class="flow-lane">
+        <div class="lane-label-bar">
+          <span class="lane-phase-num">06</span>
+          <span class="lane-title">Recovery & Decision</span>
+        </div>
+
+        <div class="flow-node" style="flex: 1; border-color: var(--terracotta);">
+          <div class="node-header">
+            <div class="node-icon-title">
+              <span class="node-icon">🛡️</span>
+              <span class="node-title">Deterministic Engine</span>
+            </div>
+            <span class="node-badge badge-rules">Verified</span>
+          </div>
+          <div class="node-desc">
+            Validates timing feasibility & cost impact. Synthesizes ranked recovery plans:
+          </div>
+
+          <!-- Ranked Options -->
+          <div class="plan-option-mini recommended">
+            <div class="plan-opt-header">
+              <span>Option 1: Hold Hotel Stay</span>
+              <span style="color: var(--accent-green);">₹0 Fee</span>
+            </div>
+            <div class="plan-opt-meta">Auto-notify desk of 20:30 arrival + move dinner to 21:30.</div>
+          </div>
+
+          <div class="plan-option-mini">
+            <div class="plan-opt-header">
+              <span>Option 2: Rebook Indigo</span>
+              <span style="color: var(--accent-amber);">+₹2,400</span>
+            </div>
+            <div class="plan-opt-meta">Depart 15:30 to preserve original evening dinner schedule.</div>
+          </div>
+
+          <!-- User Approval Action -->
+          <div style="margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--border-color); text-align: center;">
+            <div style="font-size: 10px; font-weight: 800; color: var(--terracotta); margin-bottom: 4px;">
+              HUMAN-IN-THE-LOOP APPROVAL
+            </div>
+            <div style="background: var(--terracotta); color: #fff; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 5px; cursor: pointer;">
+              User Taps: "Approve Option 1"
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SLIDE FOOTER PRINCIPLE BAR -->
+    <div class="slide-footer-bar">
+      <div class="footer-principle">
+        <span class="principle-tag">CORE PHILOSOPHY</span>
+        <span>AI Investigates (TinyFish) • Rules Validate (FastAPI) • People Decide (1-Tap Approval)</span>
+      </div>
+      <div class="footer-stats">
+        <span>Framework: <b>FastAPI + React Native</b></span>
+        <span>Agents: <b>TinyFish Web AI</b></span>
+        <span>Storage: <b>MongoDB Atlas</b></span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let isDelayed = false;
+
+    function toggleDelaySimulation() {
+      isDelayed = !isDelayed;
+      const btn = document.getElementById('toggleDelayBtn');
+      const icon = document.getElementById('delayIcon');
+      const text = document.getElementById('delayBtnText');
+
+      const gateway = document.getElementById('delayGatewayNode');
+      const gTitle = document.getElementById('gatewayTitle');
+      const gBadge = document.getElementById('gatewayBadge');
+      const gDesc = document.getElementById('gatewayDesc');
+      const gChip = document.getElementById('gatewayChip');
+
+      const impact = document.getElementById('impactNode');
+      const iBadge = document.getElementById('impactBadge');
+      const flightStat = document.getElementById('flightStat');
+      const hotelStat = document.getElementById('hotelStat');
+      const cutoffStat = document.getElementById('cutoffStat');
+
+      if (isDelayed) {
+        btn.classList.add('active');
+        icon.innerText = '🚨';
+        text.innerText = 'Reset to Nominal Timeline';
+
+        // Gateway Node Alert
+        gateway.classList.add('delay-active', 'alert-pulse');
+        gTitle.innerText = 'DISRUPTION DETECTED!';
+        gTitle.style.color = '#A83827';
+        gBadge.className = 'node-badge badge-alert';
+        gBadge.innerText = '+2h 30m Delay';
+        gDesc.innerText = 'Flight AI-804 landing delayed from 16:30 to 19:00.';
+        gChip.innerHTML = 'Departure Pushed: <b>14:15 → 16:45</b> (Air Traffic)';
+
+        // Downstream Impact Alert
+        impact.classList.add('alert-pulse');
+        iBadge.className = 'node-badge badge-terra';
+        iBadge.innerText = 'CRITICAL CONFLICT';
+        flightStat.innerHTML = '<b style="color:var(--terracotta);">Delayed to 19:00</b>';
+        hotelStat.innerHTML = '<b style="color:var(--accent-amber);">20:30 (Late)</b>';
+        cutoffStat.innerHTML = '<b style="color:var(--terracotta);">BREACHED (20:00 Cutoff)</b>';
+
+      } else {
+        btn.classList.remove('active');
+        icon.innerText = '⚡';
+        text.innerText = 'Simulate 2h 30m Flight Delay';
+
+        // Reset Gateway
+        gateway.classList.remove('delay-active', 'alert-pulse');
+        gTitle.innerText = 'Deviation Check';
+        gTitle.style.color = 'var(--text-main)';
+        gBadge.className = 'node-badge';
+        gBadge.style.background = '#EFE9DE';
+        gBadge.innerText = 'Nominal';
+        gDesc.innerText = 'All flights running on schedule. Passive monitoring active.';
+        gChip.innerHTML = 'Delta T = <b>0m</b>. No downstream conflicts.';
+
+        // Reset Impact
+        impact.classList.remove('alert-pulse');
+        iBadge.className = 'node-badge badge-alert';
+        iBadge.innerText = 'Standing By';
+        flightStat.innerText = 'On Time (16:30 Arr)';
+        hotelStat.innerText = '17:45 (Safe)';
+        cutoffStat.innerHTML = '<span style="color:var(--accent-green);">Compliant (+2h 15m buffer)</span>';
+      }
+    }
+
+    function toggleFullscreen() {
+      const slide = document.getElementById('slideCanvas');
+      if (!document.fullscreenElement) {
+        slide.requestFullscreen().catch(err => alert(`Error entering fullscreen: ${err.message}`));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  </script>
+</body>
+</html>
