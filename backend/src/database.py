@@ -11,22 +11,26 @@ class ResilientUserCollection:
     def __init__(self, get_real_coll_fn):
         self._get_real_coll = get_real_coll_fn
         self._mem_store = {}  # str(id) -> document
+        self._atlas_available = True
         self._atlas_warned = False
 
     def _warn_atlas_offline(self, err):
+        self._atlas_available = False
         if not self._atlas_warned:
-            print(f"\n⚠️  [MongoDB Notice] Atlas unreachable ({type(err).__name__}). Falling back to fast local memory store.")
-            print("   👉 To connect directly to Atlas, ensure your current IP (27.4.174.65 or 0.0.0.0/0) is added to Atlas Network Access.\n")
+            err_name = type(err).__name__
+            print(f"\n[MongoDB Notice] Atlas unreachable ({err_name}). Seamlessly falling back to local memory store.")
+            print("   -> Note: To persist directly to Atlas, add 0.0.0.0/0 to Atlas Network Access.\n")
             self._atlas_warned = True
 
     def find_one(self, query):
-        coll = self._get_real_coll()
-        if coll is not None:
-            try:
-                doc = coll.find_one(query)
-                return doc
-            except (ServerSelectionTimeoutError, AutoReconnect, PyMongoError, Exception) as e:
-                self._warn_atlas_offline(e)
+        if self._atlas_available:
+            coll = self._get_real_coll()
+            if coll is not None:
+                try:
+                    doc = coll.find_one(query)
+                    return doc
+                except Exception as e:
+                    self._warn_atlas_offline(e)
 
         # Fallback in-memory search
         for uid, doc in self._mem_store.items():
@@ -47,13 +51,14 @@ class ResilientUserCollection:
         if "_id" not in document:
             document["_id"] = ObjectId()
 
-        coll = self._get_real_coll()
-        if coll is not None:
-            try:
-                res = coll.insert_one(document)
-                return res
-            except (ServerSelectionTimeoutError, AutoReconnect, PyMongoError, Exception) as e:
-                self._warn_atlas_offline(e)
+        if self._atlas_available:
+            coll = self._get_real_coll()
+            if coll is not None:
+                try:
+                    res = coll.insert_one(document)
+                    return res
+                except Exception as e:
+                    self._warn_atlas_offline(e)
 
         # Save to memory
         self._mem_store[str(document["_id"])] = document.copy()
@@ -62,13 +67,14 @@ class ResilientUserCollection:
         return InsertResult()
 
     def update_one(self, filter_q, update_q):
-        coll = self._get_real_coll()
-        if coll is not None:
-            try:
-                res = coll.update_one(filter_q, update_q)
-                return res
-            except (ServerSelectionTimeoutError, AutoReconnect, PyMongoError, Exception) as e:
-                self._warn_atlas_offline(e)
+        if self._atlas_available:
+            coll = self._get_real_coll()
+            if coll is not None:
+                try:
+                    res = coll.update_one(filter_q, update_q)
+                    return res
+                except Exception as e:
+                    self._warn_atlas_offline(e)
 
         # Update in memory
         doc = self.find_one(filter_q)
@@ -81,23 +87,24 @@ class ResilientUserCollection:
         return UpdateResult()
 
 
-# Connect with fast timeouts (2000ms) so requests never hang the browser
+# Connect with fast timeouts (2000ms) so requests never hang
 _real_client = None
 _real_user_coll = None
 
 try:
-    _real_client = MongoClient(
-        uri,
-        server_api=ServerApi('1'),
-        tlsCAFile=certifi.where(),
-        serverSelectionTimeoutMS=2000,
-        connectTimeoutMS=2000,
-        socketTimeoutMS=2000
-    )
-    db = _real_client["tripsaathi"]
-    _real_user_coll = db["user"]
+    if uri:
+        _real_client = MongoClient(
+            uri,
+            server_api=ServerApi('1'),
+            tlsCAFile=certifi.where(),
+            serverSelectionTimeoutMS=2000,
+            connectTimeoutMS=2000,
+            socketTimeoutMS=2000
+        )
+        db = _real_client["tripsaathi"]
+        _real_user_coll = db["user"]
 except Exception as e:
-    print(f"MongoDB Client initialization error: {e}")
+    print(f"[MongoDB Notice] Initialization note: {e}")
     db = None
     _real_user_coll = None
 
