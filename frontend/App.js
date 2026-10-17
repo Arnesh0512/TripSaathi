@@ -15,6 +15,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const DEV_MACHINE_IP = '192.168.1.11';
 const BACKEND_URL = Platform.OS === 'web' ? 'http://localhost:7000' : `http://${DEV_MACHINE_IP}:7000`;
@@ -70,6 +73,33 @@ export default function App() {
   const [homeLocation, setHomeLocation] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
+
+  // Google Auth for Native Mobile (iOS/Android in Expo Go via redirect URL)
+  const handleMobileGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const redirectUrl = 'https://auth.expo.io/@arnesh512/TripSaathi';
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${GOOGLE_CLIENT_ID}&` +
+        `response_type=id_token&` +
+        `redirect_uri=${encodeURIComponent(redirectUrl)}&` +
+        `scope=${encodeURIComponent('openid profile email')}&` +
+        `nonce=${Math.random().toString(36).substring(2)}`;
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+      if (result.type === 'success' && result.url) {
+        const match = result.url.match(/id_token=([^&]+)/);
+        if (match && match[1]) {
+          await exchangeGoogleTokenWithBackend(match[1]);
+          return;
+        }
+      }
+    } catch (err) {
+      alertError('Google Sign In error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Initialize Google Identity Services for Web
   useEffect(() => {
@@ -334,7 +364,22 @@ export default function App() {
                   <ActivityIndicator color={THEME.primary} style={{ marginVertical: 12 }} />
                 ) : (
                   <View style={styles.authBtnContainer}>
-                    <View id="googleSignInBtn" style={styles.googleBtnBox} />
+                    {Platform.OS === 'web' ? (
+                      <View id="googleSignInBtn" style={styles.googleBtnBox} />
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.googleNativeBtn}
+                        onPress={handleMobileGoogleLogin}
+                        disabled={loading}
+                        activeOpacity={0.85}
+                      >
+                        <Image
+                          source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                          style={styles.googleLogo}
+                        />
+                        <Text style={styles.googleNativeBtnText}>Sign in with Google</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                       style={styles.fastDevBtn}
                       onPress={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
@@ -1119,6 +1164,35 @@ const styles = StyleSheet.create({
     minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  googleNativeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D0C9BE',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    width: '100%',
+    maxWidth: 260,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+    gap: 10,
+    marginBottom: 4,
+  },
+  googleLogo: {
+    width: 18,
+    height: 18,
+  },
+  googleNativeBtnText: {
+    color: '#1F1B18',
+    fontSize: 13,
+    fontWeight: '700',
   },
   fastDevBtn: {
     paddingVertical: 8,

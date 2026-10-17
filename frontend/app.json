@@ -2,6 +2,7 @@
   "expo": {
     "name": "TripSaathi",
     "slug": "TripSaathi",
+    "scheme": "tripsaathi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -30,6 +31,9 @@
         "projectId": "5f9a506d-db2a-49f1-b765-71d563afa040"
       }
     },
-    "owner": "arnesh512"
+    "owner": "arnesh512",
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }
