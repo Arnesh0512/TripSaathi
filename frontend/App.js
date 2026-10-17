@@ -7,15 +7,16 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  SafeAreaView,
   Modal,
   ActivityIndicator,
   Platform,
   Alert,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -78,15 +79,19 @@ export default function App() {
   const handleMobileGoogleLogin = async () => {
     try {
       setLoading(true);
-      const redirectUrl = 'https://auth.expo.io/@arnesh512/TripSaathi';
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      const expoProxyRedirect = 'https://auth.expo.io/@arnesh512/TripSaathi';
+      const returnUrl = Linking.createURL('auth');
+      
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${GOOGLE_CLIENT_ID}&` +
         `response_type=id_token&` +
-        `redirect_uri=${encodeURIComponent(redirectUrl)}&` +
+        `redirect_uri=${encodeURIComponent(expoProxyRedirect)}&` +
         `scope=${encodeURIComponent('openid profile email')}&` +
         `nonce=${Math.random().toString(36).substring(2)}`;
 
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+      const proxyStartUrl = `https://auth.expo.io/@arnesh512/TripSaathi/start?authUrl=${encodeURIComponent(googleAuthUrl)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+
+      const result = await WebBrowser.openAuthSessionAsync(proxyStartUrl, returnUrl);
       if (result.type === 'success' && result.url) {
         const match = result.url.match(/id_token=([^&]+)/);
         if (match && match[1]) {
@@ -257,8 +262,9 @@ export default function App() {
   const showPhoneFrame = isDesktopWeb && phoneFrameMode;
 
   return (
-    <View style={showPhoneFrame ? styles.desktopBackdrop : styles.fullScreenContainer}>
-      <StatusBar style="dark" />
+    <SafeAreaProvider style={{ flex: 1 }}>
+      <View style={showPhoneFrame ? styles.desktopBackdrop : styles.fullScreenContainer}>
+        <StatusBar style="dark" />
 
       {/* TOP DESKTOP CONTROLS BAR (Only visible on wide desktop view) */}
       {isDesktopWeb && (
@@ -878,7 +884,8 @@ export default function App() {
           </View>
         </View>
       </Modal>
-    </View>
+      </View>
+    </SafeAreaProvider>
   );
 }
 
