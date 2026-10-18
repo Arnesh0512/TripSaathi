@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { styles } from '../styles/appStyles';
 import { THEME } from '../constants/theme';
@@ -21,10 +22,19 @@ const TICKET_CATEGORIES = [
 ];
 
 const TRANSPORT_MODES = [
-  { id: 'cab', label: '🚕 Cab' },
-  { id: 'airplane', label: '✈️ Airplane' },
-  { id: 'train', label: '🚆 Train' },
-  { id: 'bus', label: '🚌 Bus' },
+  { id: 'cab', label: 'Cab', icon: '🚕', color: '#D97706' },
+  { id: 'airplane', label: 'Flight', icon: '✈️', color: '#0284C7' },
+  { id: 'train', label: 'Train', icon: '🚆', color: '#059669' },
+  { id: 'bus', label: 'Bus', icon: '🚌', color: '#7C3AED' },
+];
+
+const PRESETS = [
+  'Home (Dwarka)',
+  'DEL Airport (T3)',
+  'BOM Airport (T2)',
+  'New Delhi Rly Stn',
+  'Taj Lands End, Bandra',
+  'BKC Financial Centre',
 ];
 
 export default function AddTripScreen({ token, onAddTripSuccess }) {
@@ -540,265 +550,412 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
       {/* ======================================================= */}
       {activeMode === 'PLAN_TRIP' && (
         <View>
-          <View style={styles.modeHeroCard}>
-            <Text style={styles.modeHeroTitle}>Interactive Multi-Leg Trip Builder</Text>
-            <Text style={styles.modeHeroDesc}>
-              Chain sequential journey legs in chronological order (Home → Airport Cab, Flight,
-              Airport → Hotel Cab) with budget estimation and hotel stay planning.
-            </Text>
+          {/* 1. INTERACTIVE TRANSIT SUBWAY / TIMELINE MAP */}
+          <View style={styles.routeMapCard}>
+            <View style={styles.routeMapHeaderRow}>
+              <Text style={styles.routeMapKicker}>LIVE ROUTE TIMELINE</Text>
+              <View style={styles.routeMapBadgePill}>
+                <Text style={styles.routeMapBadgeText}>
+                  {legs.length} Legs • ₹{grandTotalBudget.toLocaleString('en-IN')}
+                </Text>
+              </View>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.routeNodesScroll}
+            >
+              {legs.map((leg, idx) => {
+                const modeObj = TRANSPORT_MODES.find((m) => m.id === leg.mode) || TRANSPORT_MODES[0];
+                return (
+                  <React.Fragment key={`subway-${leg.id}`}>
+                    {/* Node: Departure */}
+                    <View style={styles.routeNodeBox}>
+                      <View style={styles.routeNodeDot}>
+                        <Text style={styles.routeNodeIcon}>
+                          {idx === 0 ? '🏠' : modeObj.icon}
+                        </Text>
+                      </View>
+                      <Text style={styles.routeNodeLabel} numberOfLines={1}>
+                        {leg.fromPoint.split(' ')[0] || `Pt ${String.fromCharCode(65 + idx)}`}
+                      </Text>
+                      <Text style={styles.routeNodeSub}>{leg.departureTime || 'Time'}</Text>
+                    </View>
+
+                    {/* Transit Connector Line with Mode Badge & Budget */}
+                    <View style={styles.routeConnectorBox}>
+                      <View style={styles.routeConnectorLine} />
+                      <View style={styles.routeConnectorBadge}>
+                        <Text style={styles.routeConnectorText}>
+                          {modeObj.icon} ₹{leg.estimatedBudget || '0'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Final Node for last leg */}
+                    {idx === legs.length - 1 && (
+                      <View style={styles.routeNodeBox}>
+                        <View style={[styles.routeNodeDot, { borderColor: '#F59E0B' }]}>
+                          <Text style={styles.routeNodeIcon}>🏨</Text>
+                        </View>
+                        <Text style={styles.routeNodeLabel} numberOfLines={1}>
+                          {leg.toPoint.split(' ')[0] || `Pt ${String.fromCharCode(66 + idx)}`}
+                        </Text>
+                        <Text style={styles.routeNodeSub}>{leg.arrivalTime || 'End'}</Text>
+                      </View>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </ScrollView>
           </View>
 
-          {/* General Trip Info */}
-          <View style={styles.formGroup}>
-            <Text style={styles.fieldKicker}>TRIP TITLE</Text>
+          {/* 2. TRIP BLUEPRINT HERO CARD */}
+          <View style={styles.tripBlueprintHero}>
+            <View style={styles.tripBlueprintKickerRow}>
+              <Text style={styles.tripBlueprintKicker}>MASTER BLUEPRINT</Text>
+              <Text style={styles.tripBlueprintTag}>Multi-Modal Chronological</Text>
+            </View>
+
             <TextInput
-              style={styles.cleanTextInput}
+              style={styles.tripBlueprintTitleInput}
               value={plannedTripName}
               onChangeText={setPlannedTripName}
-              placeholder="e.g. Delhi to Mumbai Business Trip"
+              placeholder="e.g. Delhi to Mumbai Business Tour"
               placeholderTextColor={THEME.textMuted}
             />
+
+            <View style={styles.tripMetaPillRow}>
+              <View style={styles.tripMetaPill}>
+                <Text style={styles.tripMetaIcon}>📅</Text>
+                <TextInput
+                  style={styles.tripMetaInput}
+                  value={planStartDate}
+                  onChangeText={setPlanStartDate}
+                  placeholder="Date"
+                  placeholderTextColor={THEME.textMuted}
+                />
+              </View>
+              <View style={styles.tripMetaPill}>
+                <Text style={styles.tripMetaIcon}>👥</Text>
+                <TextInput
+                  style={styles.tripMetaInput}
+                  value={planPeopleCount}
+                  onChangeText={setPlanPeopleCount}
+                  placeholder="People"
+                  keyboardType="numeric"
+                  placeholderTextColor={THEME.textMuted}
+                />
+                <Text style={{ fontSize: 10, color: THEME.textMuted }}>travelers</Text>
+              </View>
+            </View>
           </View>
 
-          <View style={styles.formInputRow}>
-            <View style={styles.formInputCol}>
-              <Text style={styles.inputSmallLabel}>JOURNEY START DATE</Text>
-              <TextInput
-                style={styles.cleanTextInput}
-                value={planStartDate}
-                onChangeText={setPlanStartDate}
-                placeholder="24 May 2025"
-                placeholderTextColor={THEME.textMuted}
-              />
-            </View>
-            <View style={styles.formInputCol}>
-              <Text style={styles.inputSmallLabel}>TOTAL TRAVELERS</Text>
-              <TextInput
-                style={styles.cleanTextInput}
-                value={planPeopleCount}
-                onChangeText={setPlanPeopleCount}
-                placeholder="2"
-                keyboardType="numeric"
-                placeholderTextColor={THEME.textMuted}
-              />
-            </View>
-          </View>
-
-          {/* CHRONOLOGICAL LEGS LIST */}
-          <Text style={[styles.fieldKicker, { marginTop: 8, marginBottom: 8 }]}>
-            JOURNEY LEGS IN CHRONOLOGICAL ORDER ({legs.length})
+          {/* 3. CHRONOLOGICAL BOARDING PASS LEGS */}
+          <Text style={[styles.fieldKicker, { marginTop: 6, marginBottom: 8 }]}>
+            TRANSIT CONNECTIONS ({legs.length} LEGS)
           </Text>
 
-          {legs.map((leg, idx) => (
-            <View key={leg.id} style={styles.legCard}>
-              <View style={styles.legHeaderRow}>
-                <Text style={styles.legIndexBadge}>
-                  LEG {String(idx + 1).padStart(2, '0')} • POINT {String.fromCharCode(65 + idx)} → POINT {String.fromCharCode(66 + idx)}
-                </Text>
-                {legs.length > 1 && (
-                  <TouchableOpacity
-                    onPress={() => handleRemoveLeg(leg.id)}
-                    style={styles.ticketRemoveBtn}
-                  >
-                    <Text style={styles.ticketRemoveBtnText}>✕ Remove</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Mode Selection */}
-              <View style={styles.typePillRow}>
-                {TRANSPORT_MODES.map((m) => (
-                  <TouchableOpacity
-                    key={m.id}
-                    style={[
-                      styles.typePill,
-                      leg.mode === m.id && styles.typePillActive,
-                    ]}
-                    onPress={() => handleUpdateLeg(leg.id, 'mode', m.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.typePillText,
-                        leg.mode === m.id && styles.typePillTextActive,
-                      ]}
-                    >
-                      {m.label}
+          {legs.map((leg, idx) => {
+            const currentMode = TRANSPORT_MODES.find((m) => m.id === leg.mode) || TRANSPORT_MODES[0];
+            return (
+              <View key={leg.id} style={styles.smartLegCard}>
+                {/* Header Strip */}
+                <View style={styles.smartLegCardHeader}>
+                  <View style={styles.smartLegBadgeRow}>
+                    <View style={styles.smartLegIndexPill}>
+                      <Text style={styles.smartLegIndexPillText}>
+                        LEG {String(idx + 1).padStart(2, '0')}
+                      </Text>
+                    </View>
+                    <Text style={styles.smartLegTitleText}>
+                      Point {String.fromCharCode(65 + idx)} → Point {String.fromCharCode(66 + idx)}
                     </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                  </View>
 
-              {/* From & To */}
-              <View style={styles.formInputRow}>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>FROM (POINT {String.fromCharCode(65 + idx)})</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={leg.fromPoint}
-                    onChangeText={(val) => handleUpdateLeg(leg.id, 'fromPoint', val)}
-                    placeholder="Origin location"
-                    placeholderTextColor={THEME.textMuted}
-                  />
+                  {legs.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => handleRemoveLeg(leg.id)}
+                      style={styles.smartLegRemoveBtn}
+                    >
+                      <Text style={styles.smartLegRemoveText}>✕ Remove</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>TO (POINT {String.fromCharCode(66 + idx)})</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={leg.toPoint}
-                    onChangeText={(val) => handleUpdateLeg(leg.id, 'toPoint', val)}
-                    placeholder="Destination point"
-                    placeholderTextColor={THEME.textMuted}
-                  />
+
+                {/* Tactile Transport Mode Switcher Tiles */}
+                <View style={styles.transportTilesRow}>
+                  {TRANSPORT_MODES.map((m) => {
+                    const isSelected = leg.mode === m.id;
+                    return (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={[
+                          styles.transportTile,
+                          isSelected && styles.transportTileActive,
+                        ]}
+                        onPress={() => handleUpdateLeg(leg.id, 'mode', m.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.transportTileIcon}>{m.icon}</Text>
+                        <Text
+                          style={[
+                            styles.transportTileLabel,
+                            isSelected && styles.transportTileLabelActive,
+                          ]}
+                        >
+                          {m.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Boarding Pass Origin → Destination */}
+                <View style={styles.legBoardingBody}>
+                  <View style={styles.boardingRouteDisplay}>
+                    {/* Origin Box */}
+                    <View style={styles.boardingStationBox}>
+                      <Text style={styles.boardingStationKicker}>
+                        DEPARTURE (PT {String.fromCharCode(65 + idx)})
+                      </Text>
+                      <TextInput
+                        style={styles.boardingStationInput}
+                        value={leg.fromPoint}
+                        onChangeText={(val) => handleUpdateLeg(leg.id, 'fromPoint', val)}
+                        placeholder="Origin"
+                        placeholderTextColor={THEME.textMuted}
+                      />
+                    </View>
+
+                    {/* Directional Midway Arrow */}
+                    <View style={styles.boardingMidwayGraphic}>
+                      <Text style={styles.boardingMidwayIcon}>{currentMode.icon}</Text>
+                      <View style={styles.boardingMidwayLine} />
+                    </View>
+
+                    {/* Destination Box */}
+                    <View style={[styles.boardingStationBox, { alignItems: 'flex-end' }]}>
+                      <Text style={styles.boardingStationKicker}>
+                        ARRIVAL (PT {String.fromCharCode(66 + idx)})
+                      </Text>
+                      <TextInput
+                        style={[styles.boardingStationInput, { textAlign: 'right' }]}
+                        value={leg.toPoint}
+                        onChangeText={(val) => handleUpdateLeg(leg.id, 'toPoint', val)}
+                        placeholder="Destination"
+                        placeholderTextColor={THEME.textMuted}
+                      />
+                    </View>
+                  </View>
+
+                  {/* 1-Tap Quick Station Presets */}
+                  <View style={styles.quickPresetRow}>
+                    {PRESETS.map((p) => (
+                      <TouchableOpacity
+                        key={p}
+                        style={styles.quickPresetChip}
+                        onPress={() => handleUpdateLeg(leg.id, 'toPoint', p)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.quickPresetChipText}>+ {p}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Timing & Budget Strip */}
+                  <View style={styles.legMetricsStrip}>
+                    <View style={styles.legMetricCard}>
+                      <Text style={styles.legMetricLabel}>DEPART</Text>
+                      <TextInput
+                        style={styles.legMetricInput}
+                        value={leg.departureTime}
+                        onChangeText={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
+                        placeholder="14:00"
+                        placeholderTextColor={THEME.textMuted}
+                      />
+                    </View>
+
+                    <View style={styles.legMetricCard}>
+                      <Text style={styles.legMetricLabel}>ARRIVE</Text>
+                      <TextInput
+                        style={styles.legMetricInput}
+                        value={leg.arrivalTime}
+                        onChangeText={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
+                        placeholder="16:15"
+                        placeholderTextColor={THEME.textMuted}
+                      />
+                    </View>
+
+                    <View style={styles.legMetricCard}>
+                      <Text style={styles.legMetricLabel}>BUDGET (₹)</Text>
+                      <TextInput
+                        style={styles.legMetricInput}
+                        value={leg.estimatedBudget}
+                        onChangeText={(val) => handleUpdateLeg(leg.id, 'estimatedBudget', val)}
+                        placeholder="5000"
+                        keyboardType="numeric"
+                        placeholderTextColor={THEME.textMuted}
+                      />
+                    </View>
+                  </View>
                 </View>
               </View>
+            );
+          })}
 
-              {/* Time & Budget */}
-              <View style={styles.formInputRow}>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>DEPARTURE TIME</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={leg.departureTime}
-                    onChangeText={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
-                    placeholder="14:00"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>ARRIVAL TIME</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={leg.arrivalTime}
-                    onChangeText={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
-                    placeholder="16:15"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>EST. BUDGET (₹)</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={leg.estimatedBudget}
-                    onChangeText={(val) => handleUpdateLeg(leg.id, 'estimatedBudget', val)}
-                    placeholder="5400"
-                    keyboardType="numeric"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-              </View>
-            </View>
-          ))}
-
-          {/* Add Next Leg */}
+          {/* 4. SMART NEXT LEG CTA */}
           <TouchableOpacity
-            style={styles.addAnotherDashedBtn}
+            style={styles.smartAddLegCard}
             onPress={handleAddLeg}
+            activeOpacity={0.8}
           >
-            <Text style={styles.addAnotherDashedBtnText}>
-              + Add Next Leg (Point {String.fromCharCode(65 + legs.length)} → Point {String.fromCharCode(66 + legs.length)})
+            <Text style={styles.smartAddLegPrompt}>
+              Next connection departs from: 📍 {legs[legs.length - 1]?.toPoint || 'Last Stop'}
+            </Text>
+            <Text style={styles.smartAddLegBtnText}>
+              + Add Connection (Point {String.fromCharCode(65 + legs.length)} → Point {String.fromCharCode(66 + legs.length)})
             </Text>
           </TouchableOpacity>
 
-          {/* STAY / ACCOMMODATION SECTION */}
-          <View style={styles.stayCard}>
-            <Text style={styles.staySectionTitle}>🏨 STAY / HOTEL PLAN</Text>
+          {/* 5. VIP HOTEL / STAY SHOWCASE CARD */}
+          <View style={styles.luxuryHotelCard}>
+            <View style={styles.luxuryHotelHeader}>
+              <Text style={styles.luxuryHotelKicker}>🏨 ACCOMMODATION & STAY</Text>
+              <View style={styles.luxuryHotelBadge}>
+                <Text style={styles.luxuryHotelBadgeText}>RECOVERY BASE</Text>
+              </View>
+            </View>
 
-            <View style={{ marginBottom: 8 }}>
-              <Text style={styles.inputSmallLabel}>DESTINATION CITY / HOTEL NAME</Text>
-              <TextInput
-                style={styles.cleanTextInput}
-                value={stayPlan.cityOrHotel}
-                onChangeText={(val) => setStayPlan({ ...stayPlan, cityOrHotel: val })}
-                placeholder="e.g. Taj Lands End, Bandra West"
-                placeholderTextColor={THEME.textMuted}
+            <View style={styles.luxuryHotelBody}>
+              <View style={styles.hotelNameInputBox}>
+                <Text style={styles.inputSmallLabel}>HOTEL / DESTINATION VENUE</Text>
+                <TextInput
+                  style={styles.cleanTextInput}
+                  value={stayPlan.cityOrHotel}
+                  onChangeText={(val) => setStayPlan({ ...stayPlan, cityOrHotel: val })}
+                  placeholder="e.g. Taj Lands End, Bandra West"
+                  placeholderTextColor={THEME.textMuted}
+                />
+              </View>
+
+              <View style={styles.hotelMetricsGrid}>
+                <View style={styles.hotelMetricTile}>
+                  <Text style={styles.hotelMetricTileLabel}>DURATION</Text>
+                  <TextInput
+                    style={styles.hotelMetricTileVal}
+                    value={stayPlan.daysCount}
+                    onChangeText={(val) => setStayPlan({ ...stayPlan, daysCount: val })}
+                    placeholder="3"
+                    keyboardType="numeric"
+                    placeholderTextColor={THEME.textMuted}
+                  />
+                  <Text style={{ fontSize: 9, color: THEME.textMuted }}>Nights</Text>
+                </View>
+
+                <View style={styles.hotelMetricTile}>
+                  <Text style={styles.hotelMetricTileLabel}>STAY BUDGET</Text>
+                  <TextInput
+                    style={styles.hotelMetricTileVal}
+                    value={stayPlan.hotelBudget}
+                    onChangeText={(val) => setStayPlan({ ...stayPlan, hotelBudget: val })}
+                    placeholder="15000"
+                    keyboardType="numeric"
+                    placeholderTextColor={THEME.textMuted}
+                  />
+                  <Text style={{ fontSize: 9, color: THEME.textMuted }}>₹ INR</Text>
+                </View>
+
+                <View style={styles.hotelMetricTile}>
+                  <Text style={styles.hotelMetricTileLabel}>CHECK-IN</Text>
+                  <TextInput
+                    style={styles.hotelMetricTileVal}
+                    value={stayPlan.checkinDate}
+                    onChangeText={(val) => setStayPlan({ ...stayPlan, checkinDate: val })}
+                    placeholder="24 May"
+                    placeholderTextColor={THEME.textMuted}
+                  />
+                  <Text style={{ fontSize: 9, color: THEME.textMuted }}>Date</Text>
+                </View>
+              </View>
+
+              <View style={styles.hotelPerksRow}>
+                <View style={styles.hotelPerkPill}>
+                  <Text style={styles.hotelPerkText}>✓ Auto Late Check-in Hold</Text>
+                </View>
+                <View style={styles.hotelPerkPill}>
+                  <Text style={styles.hotelPerkText}>✓ Disruption Protected</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* 6. INTERACTIVE HUD / BUDGET PROGRESS VISUALIZER */}
+          <View style={styles.journeyHudCard}>
+            <View style={styles.journeyHudHeader}>
+              <Text style={styles.journeyHudTitle}>TOTAL ESTIMATED BUDGET</Text>
+              <Text style={styles.journeyHudGrandTotal}>
+                ₹{grandTotalBudget.toLocaleString('en-IN')}
+              </Text>
+            </View>
+
+            {/* Spending Proportion Bar */}
+            <View style={styles.budgetProgressBarBox}>
+              <View
+                style={[
+                  styles.budgetProgressTransport,
+                  {
+                    width: `${grandTotalBudget > 0 ? Math.round((totalLegsBudget / grandTotalBudget) * 100) : 50}%`,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.budgetProgressStay,
+                  {
+                    width: `${grandTotalBudget > 0 ? 100 - Math.round((totalLegsBudget / grandTotalBudget) * 100) : 50}%`,
+                  },
+                ]}
               />
             </View>
 
-            <View style={styles.formInputRow}>
-              <View style={styles.formInputCol}>
-                <Text style={styles.inputSmallLabel}>NUMBER OF DAYS / NIGHTS</Text>
-                <TextInput
-                  style={styles.cleanTextInput}
-                  value={stayPlan.daysCount}
-                  onChangeText={(val) => setStayPlan({ ...stayPlan, daysCount: val })}
-                  placeholder="3"
-                  keyboardType="numeric"
-                  placeholderTextColor={THEME.textMuted}
-                />
+            <View style={styles.budgetBreakdownLegend}>
+              <View style={styles.budgetLegendItem}>
+                <View style={styles.budgetLegendDotTransport} />
+                <Text style={styles.budgetLegendText}>
+                  Transport: ₹{totalLegsBudget.toLocaleString('en-IN')} (
+                  {grandTotalBudget > 0 ? Math.round((totalLegsBudget / grandTotalBudget) * 100) : 0}%)
+                </Text>
               </View>
-              <View style={styles.formInputCol}>
-                <Text style={styles.inputSmallLabel}>HOTEL BUDGET (₹)</Text>
-                <TextInput
-                  style={styles.cleanTextInput}
-                  value={stayPlan.hotelBudget}
-                  onChangeText={(val) => setStayPlan({ ...stayPlan, hotelBudget: val })}
-                  placeholder="15000"
-                  keyboardType="numeric"
-                  placeholderTextColor={THEME.textMuted}
-                />
-              </View>
-            </View>
-
-            <View style={styles.formInputRow}>
-              <View style={styles.formInputCol}>
-                <Text style={styles.inputSmallLabel}>CHECK-IN DATE</Text>
-                <TextInput
-                  style={styles.cleanTextInput}
-                  value={stayPlan.checkinDate}
-                  onChangeText={(val) => setStayPlan({ ...stayPlan, checkinDate: val })}
-                  placeholder="24 May 2025"
-                  placeholderTextColor={THEME.textMuted}
-                />
-              </View>
-              <View style={styles.formInputCol}>
-                <Text style={styles.inputSmallLabel}>CHECK-OUT DATE</Text>
-                <TextInput
-                  style={styles.cleanTextInput}
-                  value={stayPlan.checkoutDate}
-                  onChangeText={(val) => setStayPlan({ ...stayPlan, checkoutDate: val })}
-                  placeholder="27 May 2025"
-                  placeholderTextColor={THEME.textMuted}
-                />
+              <View style={styles.budgetLegendItem}>
+                <View style={styles.budgetLegendDotStay} />
+                <Text style={styles.budgetLegendText}>
+                  Stay: ₹{totalStayBudget.toLocaleString('en-IN')} (
+                  {grandTotalBudget > 0 ? 100 - Math.round((totalLegsBudget / grandTotalBudget) * 100) : 0}%)
+                </Text>
               </View>
             </View>
           </View>
 
-          {/* LIVE SUMMARY CARD */}
-          <View style={styles.planSummaryCard}>
-            <View style={styles.planSummaryRow}>
-              <Text style={styles.planSummaryLabel}>Total Chronological Legs:</Text>
-              <Text style={styles.planSummaryValue}>{legs.length} transport segments</Text>
-            </View>
-            <View style={styles.planSummaryRow}>
-              <Text style={styles.planSummaryLabel}>Transport Budget:</Text>
-              <Text style={styles.planSummaryValue}>₹{totalLegsBudget.toLocaleString('en-IN')}</Text>
-            </View>
-            <View style={styles.planSummaryRow}>
-              <Text style={styles.planSummaryLabel}>Accommodation Budget:</Text>
-              <Text style={styles.planSummaryValue}>₹{totalStayBudget.toLocaleString('en-IN')}</Text>
-            </View>
-            <View style={styles.planSummaryTotalRow}>
-              <Text style={styles.planSummaryTotalLabel}>Estimated Total Budget:</Text>
-              <Text style={styles.planSummaryTotalValue}>₹{grandTotalBudget.toLocaleString('en-IN')}</Text>
-            </View>
-          </View>
-
-          {/* Submit Plan CTA */}
+          {/* 7. PRIMARY SUBMIT CTA */}
           <TouchableOpacity
             style={styles.primaryTerracottaBtn}
             onPress={handleSubmitPlanTrip}
             disabled={saving}
+            activeOpacity={0.85}
           >
             {saving ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.primaryTerracottaBtnText}>
-                💾 Save & Plan Trip in Database ({legs.length} Legs)
+                🚀 Save & Plan Trip in Database ({legs.length} Legs)
               </Text>
             )}
           </TouchableOpacity>
         </View>
       )}
+
     </View>
   );
 }

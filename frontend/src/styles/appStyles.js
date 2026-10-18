@@ -1189,100 +1189,546 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Leg Card (Option 2 - Plan Trip)
-  legCard: {
-    backgroundColor: THEME.paper,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+  // ==========================================
+  // Redesigned "Plan Multi-Leg Trip" Styles
+  // ==========================================
+
+  // Interactive Route Subway / Timeline Map Header
+  routeMapCard: {
+    backgroundColor: '#1E1B18', // Sleek dark contrast card for transit map
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  legHeaderRow: {
+  routeMapHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  legIndexBadge: {
+  routeMapKicker: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#D4A373',
+    letterSpacing: 1,
+  },
+  routeMapBadgePill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  routeMapBadgeText: {
+    color: '#FAF6F0',
     fontSize: 10,
+    fontWeight: '700',
+  },
+  routeNodesScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  routeNodeBox: {
+    alignItems: 'center',
+  },
+  routeNodeDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#38332E',
+    borderWidth: 2,
+    borderColor: '#D4A373',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  routeNodeIcon: {
+    fontSize: 14,
+  },
+  routeNodeLabel: {
+    color: '#FAF6F0',
+    fontSize: 10,
+    fontWeight: '700',
+    maxWidth: 68,
+    textAlign: 'center',
+  },
+  routeNodeSub: {
+    color: '#9B9389',
+    fontSize: 8,
+    textAlign: 'center',
+  },
+  routeConnectorBox: {
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    minWidth: 46,
+  },
+  routeConnectorLine: {
+    height: 2,
+    width: '100%',
+    backgroundColor: '#5C544B',
+    marginBottom: 4,
+  },
+  routeConnectorBadge: {
+    backgroundColor: '#2A2521',
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#4A423A',
+  },
+  routeConnectorText: {
+    color: '#D4A373',
+    fontSize: 8,
+    fontWeight: '700',
+  },
+
+  // Trip Blueprint Hero Card
+  tripBlueprintHero: {
+    backgroundColor: THEME.paper,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tripBlueprintKickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  tripBlueprintKicker: {
+    fontSize: 9,
     fontWeight: '800',
     color: THEME.primary,
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
-  legRouteVisual: {
+  tripBlueprintTag: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.textSecondary,
+    backgroundColor: THEME.bgAlt,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  tripBlueprintTitleInput: {
+    fontFamily: SERIF_FONT,
+    fontSize: 15,
+    fontWeight: '700',
+    color: THEME.text,
+    borderBottomWidth: 1.5,
+    borderBottomColor: THEME.primaryBorder,
+    paddingVertical: 4,
+    marginBottom: 10,
+  },
+  tripMetaPillRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  tripMetaPill: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: THEME.paperSubtle,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  legRouteVisualText: {
+  tripMetaIcon: {
+    fontSize: 13,
+  },
+  tripMetaInput: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.text,
+    padding: 0,
+  },
+
+  // Boarding Pass Leg Card
+  smartLegCard: {
+    backgroundColor: THEME.paper,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: THEME.borderDark,
+    marginBottom: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  smartLegCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  smartLegBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  smartLegIndexPill: {
+    backgroundColor: THEME.primary,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  smartLegIndexPillText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  smartLegTitleText: {
     fontSize: 11,
     fontWeight: '700',
     color: THEME.text,
   },
+  smartLegRemoveBtn: {
+    padding: 4,
+  },
+  smartLegRemoveText: {
+    color: '#B3261E',
+    fontSize: 11,
+    fontWeight: '700',
+  },
 
-  // Stay Plan Section
-  stayCard: {
+  // Transport Mode Switcher Tiles
+  transportTilesRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 6,
+    backgroundColor: THEME.paperSubtle,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  transportTile: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: 8,
     backgroundColor: THEME.paper,
     borderWidth: 1,
     borderColor: THEME.border,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 14,
   },
-  staySectionTitle: {
-    fontSize: 11,
+  transportTileActive: {
+    backgroundColor: THEME.primaryLight,
+    borderColor: THEME.primary,
+    borderWidth: 1.5,
+  },
+  transportTileIcon: {
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  transportTileLabel: {
+    fontSize: 9,
     fontWeight: '700',
-    color: THEME.primary,
-    letterSpacing: 0.6,
-    marginBottom: 8,
-  },
-
-  // Live Summary box
-  planSummaryCard: {
-    backgroundColor: THEME.bgAlt,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: THEME.borderDark,
-    padding: 10,
-    marginBottom: 14,
-  },
-  planSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  planSummaryLabel: {
-    fontSize: 11,
     color: THEME.textSecondary,
   },
-  planSummaryValue: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: THEME.text,
+  transportTileLabelActive: {
+    color: THEME.primary,
   },
-  planSummaryTotalRow: {
+
+  // Visual Route Section (Boarding Pass Layout)
+  legBoardingBody: {
+    padding: 12,
+  },
+  boardingRouteDisplay: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    paddingTop: 6,
-    marginTop: 4,
+    marginBottom: 10,
+    backgroundColor: THEME.paperSubtle,
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: THEME.border,
   },
-  planSummaryTotalLabel: {
+  boardingStationBox: {
+    flex: 1,
+  },
+  boardingStationKicker: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: THEME.primary,
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  boardingStationInput: {
     fontSize: 12,
     fontWeight: '700',
     color: THEME.text,
+    padding: 0,
   },
-  planSummaryTotalValue: {
-    fontSize: 13,
+  boardingMidwayGraphic: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  boardingMidwayIcon: {
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  boardingMidwayLine: {
+    width: 38,
+    height: 1.5,
+    backgroundColor: THEME.primary,
+  },
+
+  // Quick Preset Chips
+  quickPresetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginBottom: 10,
+  },
+  quickPresetChip: {
+    backgroundColor: THEME.bgAlt,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  quickPresetChipText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: THEME.textSecondary,
+  },
+
+  // Timing & Budget Mini Strip
+  legMetricsStrip: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 2,
+  },
+  legMetricCard: {
+    flex: 1,
+    backgroundColor: THEME.paperSubtle,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  legMetricLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: THEME.textMuted,
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  legMetricInput: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.text,
+    padding: 0,
+  },
+
+  // Smart Next Leg Banner
+  smartAddLegCard: {
+    backgroundColor: THEME.primaryLight,
+    borderWidth: 1.5,
+    borderColor: THEME.primaryBorder,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  smartAddLegPrompt: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  smartAddLegBtnText: {
+    color: THEME.primary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  // VIP Hotel Showcase Card
+  luxuryHotelCard: {
+    backgroundColor: THEME.paper,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#C25E1A',
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  luxuryHotelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FDE68A',
+  },
+  luxuryHotelKicker: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.8,
+  },
+  luxuryHotelBadge: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  luxuryHotelBadgeText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  luxuryHotelBody: {
+    padding: 12,
+  },
+  hotelNameInputBox: {
+    marginBottom: 10,
+  },
+  hotelMetricsGrid: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+  },
+  hotelMetricTile: {
+    flex: 1,
+    backgroundColor: THEME.paperSubtle,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  hotelMetricTileLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: THEME.textMuted,
+    marginBottom: 2,
+  },
+  hotelMetricTileVal: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.text,
+    padding: 0,
+  },
+  hotelPerksRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 2,
+  },
+  hotelPerkPill: {
+    backgroundColor: THEME.greenBg,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.green,
+  },
+  hotelPerkText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.green,
+  },
+
+  // Interactive HUD / Budget Visualizer
+  journeyHudCard: {
+    backgroundColor: THEME.paper,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    padding: 12,
+    marginBottom: 14,
+  },
+  journeyHudHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  journeyHudTitle: {
+    fontSize: 11,
     fontWeight: '800',
     color: THEME.primary,
+    letterSpacing: 0.6,
+  },
+  journeyHudGrandTotal: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: THEME.text,
+  },
+  budgetProgressBarBox: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: THEME.bgAlt,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  budgetProgressTransport: {
+    backgroundColor: '#0284C7',
+    height: '100%',
+  },
+  budgetProgressStay: {
+    backgroundColor: '#C25E1A',
+    height: '100%',
+  },
+  budgetBreakdownLegend: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  budgetLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  budgetLegendDotTransport: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#0284C7',
+  },
+  budgetLegendDotStay: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#C25E1A',
+  },
+  budgetLegendText: {
+    fontSize: 10,
+    color: THEME.textSecondary,
+    fontWeight: '600',
   },
 
   // Success Feedback Banner
@@ -1300,4 +1746,5 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+
 });
