@@ -294,9 +294,12 @@ export default function App() {
 
               {activeTab === 'DASHBOARD' && (
                 <DashboardScreen
+                  token={token}
+                  user={user}
                   dashboardSubtab={dashboardSubtab}
                   setDashboardSubtab={setDashboardSubtab}
                   onViewImpact={() => setActiveTab('IMPACT')}
+                  onNavigateToAddTrip={() => setActiveTab('ADD_TRIP')}
                 />
               )}
 

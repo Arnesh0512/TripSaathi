@@ -64,5 +64,4 @@ def get_architecture_slide():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7000))
     print(f"Starting TripSaathi Backend Server on port {port}...")
-    print(f"API Documentation: http://localhost:{port}/docs")
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

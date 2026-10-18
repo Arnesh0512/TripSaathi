@@ -15,9 +15,9 @@ def verify_google_token(data: dict | None) -> dict:
     # Developer test mode for quick offline verification if needed
     if token == "mock_google_token_dev":
         return {
-            "email": "developer@tripsaathi.com",
-            "name": "TripSaathi Explorer",
-            "picture": "https://lh3.googleusercontent.com/a/default-user"
+            "email": "arnesh052006@gmail.com",
+            "name": "Arnesh Kumar Gupta",
+            "picture": "https://lh3.googleusercontent.com/a/ACg8ocJXO0dHnTFwd4N-wXq54YNNoJYLVFLCe-rFx_eaxqfInG_MXS8=s96-c"
         }
 
     # Support either Web Client ID or Android Client ID as valid audiences

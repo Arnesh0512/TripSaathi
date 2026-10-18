@@ -119,26 +119,79 @@ def plan_new_trip(
 @router.get("/my-trips")
 def get_user_trips(current_user: Optional[dict] = Depends(get_optional_user)):
     """
-    Fetch all trips saved in TripSaathi MongoDB.
+    Fetch all trips saved in TripSaathi MongoDB for the user (matching arnesh052006@gmail.com by default).
+    Returns current trip at top, followed by past completed trips.
     """
     try:
-        query = {}
-        if current_user and current_user.get("user_id"):
-            query = {"$or": [{"user_id": current_user["user_id"]}, {"user_email": current_user["email"]}]}
+        target_email = "arnesh052006@gmail.com"
+        if current_user and current_user.get("email"):
+            target_email = current_user["email"].lower()
         
-        cursor = trips_collection.find(query).sort("created_at", -1).limit(20)
-        trips = []
+        query_conditions = [
+            {"user_email": target_email},
+            {"user_email": "arnesh052006@gmail.com"},
+            {"user_email": "guest_traveler"}
+        ]
+        if current_user and current_user.get("user_id"):
+            query_conditions.append({"user_id": current_user["user_id"]})
+
+        query = {"$or": query_conditions}
+        
+        cursor = trips_collection.find(query).limit(50)
+        all_trips = []
         for doc in cursor:
             doc["_id"] = str(doc["_id"])
-            trips.append(doc)
+            all_trips.append(doc)
+
+        # Separate current vs past trips so current is guaranteed at the top
+        current_trips = []
+        past_trips = []
+        for t in all_trips:
+            is_past = (
+                t.get("is_past") is True 
+                or t.get("status") == "COMPLETED" 
+                or t.get("monitoring_status") == "COMPLETED"
+            )
+            if is_past:
+                past_trips.append(t)
+            else:
+                current_trips.append(t)
+
+        # Sort current trips by created_at desc, and past trips by created_at desc
+        current_trips.sort(key=lambda x: str(x.get("created_at", "")), reverse=True)
+        past_trips.sort(key=lambda x: str(x.get("created_at", "")), reverse=True)
+
+        ordered_trips = current_trips + past_trips
 
         return {
             "status": "SUCCESS",
-            "count": len(trips),
-            "trips": trips
+            "count": len(ordered_trips),
+            "trips": ordered_trips
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+
+@router.delete("/{trip_id}")
+def delete_trip(
+    trip_id: str,
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
+    """
+    Delete a trip by its MongoDB ObjectId.
+    """
+    try:
+        result = trips_collection.delete_one({"_id": ObjectId(trip_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Trip not found or already deleted")
+        return {
+            "status": "SUCCESS",
+            "message": "Trip deleted successfully from TripSaathi MongoDB",
+            "trip_id": trip_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid trip id or delete error: {str(e)}")
 
 @router.get("/{trip_id}")
 def get_trip_detail(trip_id: str):

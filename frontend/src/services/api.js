@@ -94,6 +94,16 @@ export const tripApi = {
       headers,
     });
   },
+  deleteTrip: async (tripId, jwtToken = null) => {
+    const headers = {};
+    if (jwtToken) {
+      headers.Authorization = `Bearer ${jwtToken}`;
+    }
+    return await callBackend(`/trip/${tripId}`, {
+      method: 'DELETE',
+      headers,
+    });
+  },
   parseTicketPdf: async (formData, jwtToken = null) => {
     const headers = {};
     if (jwtToken) {
