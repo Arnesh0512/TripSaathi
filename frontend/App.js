@@ -264,37 +264,30 @@ export default function App() {
           )}
 
           <SafeAreaView style={styles.phoneInnerCanvas}>
-            {/* MOBILE STATUS BAR ROW */}
-            <View style={styles.mobileStatusBar}>
-              <Text style={styles.mobileStatusTime}>9:41</Text>
-              <View style={styles.mobileStatusIcons}>
-                <Text style={styles.mobileStatusIconItem}>📶</Text>
-                <Text style={styles.mobileStatusIconItem}>🔋</Text>
-              </View>
-            </View>
-
-            {/* MOBILE APP HEADER */}
-            <Header
-              user={user}
-              onOpenProfile={() => setProfileModalVisible(true)}
-              onGoogleSignIn={() => {
-                if (Platform.OS === 'web') {
-                  if (window.google?.accounts?.id) {
-                    window.google.accounts.id.prompt((notification) => {
-                      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                        // Fallback to dev test login if GSI popup is blocked by browser/localhost
-                        exchangeGoogleTokenWithBackend('mock_google_token_dev');
-                      }
-                    });
+            {/* MOBILE APP HEADER: Shown on all pages before sign-in; after sign-in, appears only on DASHBOARD */}
+            {(!user || activeTab === 'DASHBOARD') && (
+              <Header
+                user={user}
+                onOpenProfile={() => setProfileModalVisible(true)}
+                onGoogleSignIn={() => {
+                  if (Platform.OS === 'web') {
+                    if (window.google?.accounts?.id) {
+                      window.google.accounts.id.prompt((notification) => {
+                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                          // Fallback to dev test login if GSI popup is blocked by browser/localhost
+                          exchangeGoogleTokenWithBackend('mock_google_token_dev');
+                        }
+                      });
+                    } else {
+                      exchangeGoogleTokenWithBackend('mock_google_token_dev');
+                    }
                   } else {
-                    exchangeGoogleTokenWithBackend('mock_google_token_dev');
+                    handleMobileGoogleLogin();
                   }
-                } else {
-                  handleMobileGoogleLogin();
-                }
-              }}
-              onFastSignIn={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
-            />
+                }}
+                onFastSignIn={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
+              />
+            )}
 
             {/* INCOMPLETE PROFILE REMINDER PILL */}
             {user && isProfileIncomplete && (

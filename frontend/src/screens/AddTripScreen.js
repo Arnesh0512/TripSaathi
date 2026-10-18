@@ -12,6 +12,7 @@ import {
 import { styles } from '../styles/appStyles';
 import { THEME } from '../constants/theme';
 import { tripApi } from '../services/api';
+import DateTimePickerUnderline from '../components/DateTimePickerUnderline';
 
 const TICKET_CATEGORIES = [
   { id: 'flight', label: 'Flight', icon: '✈️' },
@@ -412,14 +413,6 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
       {/* ======================================================= */}
       {activeMode === 'UPLOAD_TICKETS' && (
         <View>
-          <View style={styles.modeHeroCard}>
-            <Text style={styles.modeHeroTitle}>Already Booked? Monitor Your Journey</Text>
-            <Text style={styles.modeHeroDesc}>
-              Input as many confirmed tickets as you have (Plane, Train, Hotel, Cab). TripSaathi
-              watches connection buffers and initiates recovery if a delay cascades.
-            </Text>
-          </View>
-
           {/* Trip Name with clean underline input (no box graphics) */}
           <View style={styles.ticketFieldGroup}>
             <Text style={styles.underlineKicker}>TRIP REFERENCE NAME</Text>
@@ -768,15 +761,12 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                             </View>
                           )}
                         </View>
-                        <TextInput
-                          style={[
-                            styles.ticketUnderlineInput,
-                            t.missingFields.includes('departureTime') && styles.ticketUnderlineInputWarning,
-                          ]}
+                        <DateTimePickerUnderline
+                          mode="datetime"
                           value={t.departureTime}
-                          onChangeText={(val) => handleUpdateTicket(t.id, 'departureTime', val)}
-                          placeholder="e.g. 24 May 2025, 14:00"
-                          placeholderTextColor="#C4BCB3"
+                          onChange={(val) => handleUpdateTicket(t.id, 'departureTime', val)}
+                          placeholder="Select departure date & time"
+                          hasWarning={t.missingFields.includes('departureTime')}
                         />
                       </View>
 
@@ -791,15 +781,12 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                             </View>
                           )}
                         </View>
-                        <TextInput
-                          style={[
-                            styles.ticketUnderlineInput,
-                            t.missingFields.includes('arrivalTime') && styles.ticketUnderlineInputWarning,
-                          ]}
+                        <DateTimePickerUnderline
+                          mode="datetime"
                           value={t.arrivalTime}
-                          onChangeText={(val) => handleUpdateTicket(t.id, 'arrivalTime', val)}
-                          placeholder="e.g. 24 May 2025, 16:30"
-                          placeholderTextColor="#C4BCB3"
+                          onChange={(val) => handleUpdateTicket(t.id, 'arrivalTime', val)}
+                          placeholder="Select arrival date & time"
+                          hasWarning={t.missingFields.includes('arrivalTime')}
                         />
                       </View>
                     </View>
@@ -961,14 +948,12 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
             />
 
             <View style={styles.tripMetaPillRow}>
-              <View style={styles.tripMetaPill}>
-                <Text style={styles.tripMetaIcon}>📅</Text>
-                <TextInput
-                  style={styles.tripMetaInput}
+              <View style={[styles.tripMetaPill, { minWidth: 160 }]}>
+                <DateTimePickerUnderline
+                  mode="date"
                   value={planStartDate}
-                  onChangeText={setPlanStartDate}
-                  placeholder="Date (e.g. 24 May 2025)"
-                  placeholderTextColor="#B0A89F"
+                  onChange={setPlanStartDate}
+                  placeholder="Trip start date"
                 />
               </View>
               <View style={styles.tripMetaPill}>
@@ -1061,14 +1046,12 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         placeholder="Type departure location"
                         placeholderTextColor="#B0A89F"
                       />
-                      <View style={styles.timeUnderlineRow}>
-                        <Text style={styles.timeIconPrefix}>🕒</Text>
-                        <TextInput
-                          style={styles.timeUnderlineInput}
+                      <View style={{ marginTop: 4, width: '100%' }}>
+                        <DateTimePickerUnderline
+                          mode="time"
                           value={leg.departureTime}
-                          onChangeText={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
+                          onChange={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
                           placeholder="Time (e.g. 11:30)"
-                          placeholderTextColor="#C4BCB3"
                         />
                       </View>
                     </View>
@@ -1091,14 +1074,13 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         placeholder="Type arrival location"
                         placeholderTextColor="#B0A89F"
                       />
-                      <View style={[styles.timeUnderlineRow, { justifyContent: 'flex-end' }]}>
-                        <Text style={styles.timeIconPrefix}>🕒</Text>
-                        <TextInput
-                          style={[styles.timeUnderlineInput, { textAlign: 'right' }]}
+                      <View style={{ marginTop: 4, width: '100%', alignItems: 'flex-end' }}>
+                        <DateTimePickerUnderline
+                          mode="time"
                           value={leg.arrivalTime}
-                          onChangeText={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
+                          onChange={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
                           placeholder="Time (e.g. 12:15)"
-                          placeholderTextColor="#C4BCB3"
+                          alignRight={true}
                         />
                       </View>
                     </View>
@@ -1188,12 +1170,11 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
 
                 <View style={styles.hotelMetricTile}>
                   <Text style={styles.hotelMetricTileLabel}>CHECK-IN DATE</Text>
-                  <TextInput
-                    style={styles.hotelMetricTileVal}
+                  <DateTimePickerUnderline
+                    mode="date"
                     value={stayPlan.checkinDate}
-                    onChangeText={(val) => setStayPlan({ ...stayPlan, checkinDate: val })}
-                    placeholder="e.g. 24 May"
-                    placeholderTextColor="#B0A89F"
+                    onChange={(val) => setStayPlan({ ...stayPlan, checkinDate: val })}
+                    placeholder="Check-in date"
                   />
                 </View>
               </View>
