@@ -71,7 +71,6 @@ export default function RecoveryScreen({
             </Text>
           </View>
         </View>
-        <Text style={styles.screenStepBadge}>STAGE 04</Text>
       </View>
       <Text style={styles.impactSubText}>
         Scraped policy intelligence, financial protection & action checklist

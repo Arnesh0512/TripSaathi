@@ -533,7 +533,6 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
             </Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.screenStepBadge}>STAGE 01</Text>
       </View>
 
       {/* TWO OPTIONS SELECTOR - REVERSED: PLAN MULTI-LEG FIRST, THEN UPLOAD */}

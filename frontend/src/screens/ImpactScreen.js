@@ -38,7 +38,6 @@ export default function ImpactScreen({
             </Text>
           </View>
         </View>
-        <Text style={styles.screenStepBadge}>STAGE 03</Text>
       </View>
       <Text style={styles.impactSubText}>
         Downstream chain reaction & schedule lag across multi-leg itinerary

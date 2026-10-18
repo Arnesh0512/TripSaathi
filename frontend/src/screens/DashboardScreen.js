@@ -146,16 +146,12 @@ export default function DashboardScreen({
               Autonomous connected travel intelligence & recovery
             </Text>
           </View>
-          <Text style={styles.screenStepBadge}>STAGE 02</Text>
         </View>
 
         {/* Bulleted Features Card */}
         <View style={styles.welcomeFeaturesCard}>
           <View style={styles.welcomeFeaturesHeader}>
             <Text style={styles.welcomeFeaturesTitle}>Core Capabilities</Text>
-            <View style={styles.welcomeFeaturesBadge}>
-              <Text style={styles.welcomeFeaturesBadgeText}>6 FEATURES</Text>
-            </View>
           </View>
 
           <View style={styles.welcomeFeatureList}>
@@ -195,7 +191,6 @@ export default function DashboardScreen({
             Connected itineraries & historical journeys
           </Text>
         </View>
-        <Text style={styles.screenStepBadge}>STAGE 02</Text>
       </View>
 
       {/* Database Sync & User Indicator Strip */}
