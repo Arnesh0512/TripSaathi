@@ -313,6 +313,7 @@ export default function App() {
               {activeTab === 'ADD_TRIP' && (
                 <AddTripScreen
                   token={token}
+                  user={user}
                   onAddTripSuccess={() => setActiveTab('MONITOR')}
                 />
               )}

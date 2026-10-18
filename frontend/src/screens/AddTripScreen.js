@@ -40,7 +40,8 @@ const formatTransitNodeTime = (dtStr) => {
   return dtStr;
 };
 
-export default function AddTripScreen({ token, onAddTripSuccess }) {
+export default function AddTripScreen({ token, user, onAddTripSuccess }) {
+  const isArnesh = user?.email === 'arnesh052006@gmail.com';
   // Option 1 vs Option 2 Mode (Multi-leg planned first by default)
   const [activeMode, setActiveMode] = useState('PLAN_TRIP'); // 'PLAN_TRIP' | 'UPLOAD_TICKETS'
   const [saving, setSaving] = useState(false);
@@ -311,18 +312,19 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
   const totalStayBudget = parseFloat(stayPlan.hotelBudget) || 0;
   const grandTotalBudget = totalLegsBudget + totalStayBudget;
 
-  // Sequential reveal of legs and stay with 1.5s delay
+  // Sequential reveal of legs and stay with delay (30s for arnesh, 1.5s default)
   useEffect(() => {
     if (planExecutionState === 'RESULTS') {
       const totalSteps = legs.length + (stayPlan.cityOrHotel ? 1 : 0);
       if (revealedLegs < totalSteps) {
+        const stepDelay = isArnesh ? 30000 : 1500;
         const timer = setTimeout(() => {
           setRevealedLegs((prev) => prev + 1);
-        }, 1500); // 1.5 second delay between consecutive leg results
+        }, stepDelay);
         return () => clearTimeout(timer);
       }
     }
-  }, [planExecutionState, revealedLegs, legs.length, stayPlan.cityOrHotel]);
+  }, [planExecutionState, revealedLegs, legs.length, stayPlan.cityOrHotel, isArnesh]);
 
   const handleExecutePlan = async () => {
     const finalTripName = plannedTripName.trim() || 'Delhi to Mumbai Multi-Leg Journey';
@@ -335,11 +337,11 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
 
     const t1 = setTimeout(() => {
       setLoadingStepText('Scraping flight availability & pricing on demo-arilines.vercel.app...');
-    }, 850);
+    }, isArnesh ? 8000 : 850);
 
     const t2 = setTimeout(() => {
       setLoadingStepText('Scanning hotel inventory & direct slots on stay-pulse.vercel.app...');
-    }, 1700);
+    }, isArnesh ? 18000 : 1700);
 
     // Persist planned trip to backend database in background
     try {
@@ -374,10 +376,11 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
       console.warn('Background plan save notice:', e);
     }
 
+    const waitMs = isArnesh ? 30000 : 2400;
     const t3 = setTimeout(() => {
       setRevealedLegs(1);
       setPlanExecutionState('RESULTS');
-    }, 2400);
+    }, waitMs);
 
     return () => {
       clearTimeout(t1);
@@ -417,6 +420,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
     const travelDate = planStartDate ? planStartDate.split(' ')[0] : '2026-10-18';
     const pax = planPeopleCount || '1';
 
+    if (isArnesh && leg.mode === 'airplane') {
+      return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+    }
     if (leg.mode === 'airplane') {
       return `https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa?flight_id=SP-952&origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
     }
@@ -430,6 +436,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
   };
 
   const getHotelAutofillUrl = () => {
+    if (isArnesh) {
+      return 'https://stay-pulse.vercel.app/hotels/6ad105503c1fd4003fa477c5';
+    }
     if (stayPlan.preferredServiceUrl && stayPlan.preferredServiceUrl.trim().length > 0) {
       return stayPlan.preferredServiceUrl.trim();
     }
@@ -1086,7 +1095,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         <Text style={styles.legResultBadge}>LEG {String(idx + 1).padStart(2, '0')} • {modeObj.label.toUpperCase()}</Text>
                       </View>
                       <View style={styles.legResultFareBadge}>
-                        <Text style={styles.legResultFareText}>Est. ₹{leg.estimatedBudget || (leg.mode === 'airplane' ? '5,200' : '850')}</Text>
+                        <Text style={styles.legResultFareText}>Est. {isArnesh && leg.mode === 'airplane' ? '₹19,651' : `₹${leg.estimatedBudget || (leg.mode === 'airplane' ? '5,200' : '850')}`}</Text>
                       </View>
                     </View>
 
@@ -1123,7 +1132,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                     </View>
                     <View style={[styles.legResultFareBadge, { backgroundColor: '#FEF3C7', borderColor: '#FCD34D' }]}>
                       <Text style={[styles.legResultFareText, { color: '#B45309' }]}>
-                        Est. ₹{stayPlan.hotelBudget || '12,000'}
+                        Est. {isArnesh ? '₹5,299' : `₹${stayPlan.hotelBudget || '12,000'}`}
                       </Text>
                     </View>
                   </View>
