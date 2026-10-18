@@ -247,33 +247,91 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
   // ----------------------------------------------------
   // Option 2 State: Plan Multi-Leg Chronological Trip
   // ----------------------------------------------------
-  const [plannedTripName, setPlannedTripName] = useState('');
-  const [planStartDate, setPlanStartDate] = useState('');
-  const [planPeopleCount, setPlanPeopleCount] = useState('');
+  const [plannedTripName, setPlannedTripName] = useState(isArnesh ? 'conference' : '');
+  const [planStartDate, setPlanStartDate] = useState(isArnesh ? '19th oct 2026' : '');
+  const [planPeopleCount, setPlanPeopleCount] = useState(isArnesh ? '1' : '');
 
-  const [legs, setLegs] = useState([
-    {
-      id: 1,
-      fromPoint: '',
-      toPoint: '',
-      mode: 'cab',
-      departureTime: '',
-      arrivalTime: '',
-      estimatedBudget: '',
-      preferredServiceUrl: '',
-      notes: '',
-    },
-  ]);
+  const [legs, setLegs] = useState(
+    isArnesh
+      ? [
+          {
+            id: 1,
+            fromPoint: 'Delhi',
+            toPoint: 'Mumbai',
+            mode: 'airplane',
+            departureTime: '19 Oct 2026, 17:00',
+            arrivalTime: '19 Oct 2026, 23:00',
+            estimatedBudget: '20,000',
+            preferredServiceUrl: 'https://demo-arilines.vercel.app/',
+            notes: '',
+          },
+        ]
+      : [
+          {
+            id: 1,
+            fromPoint: '',
+            toPoint: '',
+            mode: 'cab',
+            departureTime: '',
+            arrivalTime: '',
+            estimatedBudget: '',
+            preferredServiceUrl: '',
+            notes: '',
+          },
+        ]
+  );
 
-  const [stayPlan, setStayPlan] = useState({
-    cityOrHotel: '',
-    daysCount: '',
-    peopleCount: '',
-    hotelBudget: '',
-    checkinDate: '',
-    checkoutDate: '',
-    preferredServiceUrl: '',
-  });
+  const [stayPlan, setStayPlan] = useState(
+    isArnesh
+      ? {
+          cityOrHotel: 'Mumbai',
+          daysCount: '2',
+          peopleCount: '1',
+          hotelBudget: '7000',
+          checkinDate: '19th oct 2026',
+          checkoutDate: '',
+          preferredServiceUrl: 'https://stay-pulse.vercel.app/',
+        }
+      : {
+          cityOrHotel: '',
+          daysCount: '',
+          peopleCount: '',
+          hotelBudget: '',
+          checkinDate: '',
+          checkoutDate: '',
+          preferredServiceUrl: '',
+        }
+  );
+
+  useEffect(() => {
+    if (isArnesh) {
+      setPlannedTripName('conference');
+      setPlanStartDate('19th oct 2026');
+      setPlanPeopleCount('1');
+      setLegs([
+        {
+          id: 1,
+          fromPoint: 'Delhi',
+          toPoint: 'Mumbai',
+          mode: 'airplane',
+          departureTime: '19 Oct 2026, 17:00',
+          arrivalTime: '19 Oct 2026, 23:00',
+          estimatedBudget: '20,000',
+          preferredServiceUrl: 'https://demo-arilines.vercel.app/',
+          notes: '',
+        },
+      ]);
+      setStayPlan({
+        cityOrHotel: 'Mumbai',
+        daysCount: '2',
+        peopleCount: '1',
+        hotelBudget: '7000',
+        checkinDate: '19th oct 2026',
+        checkoutDate: '',
+        preferredServiceUrl: 'https://stay-pulse.vercel.app/',
+      });
+    }
+  }, [isArnesh]);
 
   const handleAddLeg = () => {
     const lastLeg = legs[legs.length - 1];
@@ -306,10 +364,10 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
 
   // Live Budget Calculation
   const totalLegsBudget = legs.reduce(
-    (sum, leg) => sum + (parseFloat(leg.estimatedBudget) || 0),
+    (sum, leg) => sum + (parseFloat(String(leg.estimatedBudget || '').replace(/,/g, '')) || 0),
     0
   );
-  const totalStayBudget = parseFloat(stayPlan.hotelBudget) || 0;
+  const totalStayBudget = parseFloat(String(stayPlan.hotelBudget || '').replace(/,/g, '')) || 0;
   const grandTotalBudget = totalLegsBudget + totalStayBudget;
 
   // Sequential reveal of legs and stay with delay (30s for arnesh, 1.5s default)

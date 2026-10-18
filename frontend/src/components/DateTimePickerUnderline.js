@@ -52,7 +52,7 @@ function parseInitialState(val, mode, defaultDate = null) {
   let baseDate = new Date();
   if (defaultDate && typeof defaultDate === 'string' && defaultDate.trim()) {
     const dStr = defaultDate.trim();
-    const dMatch = dStr.match(/(\d{1,2})\s+([A-Za-z]{3,9})(?:[\s,]+(\d{4}))?/i);
+    const dMatch = dStr.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})(?:[\s,]+(\d{4}))?/i);
     if (dMatch) {
       day = parseInt(dMatch[1], 10);
       const mStr = dMatch[2].slice(0, 3).toLowerCase();
@@ -82,8 +82,8 @@ function parseInitialState(val, mode, defaultDate = null) {
 
   const str = val.trim();
 
-  // Try parsing '24 May 2025, 14:00' or '24 May 2025'
-  const dateMatch = str.match(/(\d{1,2})\s+([A-Za-z]{3,9})(?:[\s,]+(\d{4}))?(?:[\s,]+(\d{1,2}):(\d{2}))?/i);
+  // Try parsing '24 May 2025, 14:00' or '24 May 2025' or '19th oct 2026'
+  const dateMatch = str.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})(?:[\s,]+(\d{4}))?(?:[\s,]+(\d{1,2}):(\d{2}))?/i);
   if (dateMatch) {
     day = parseInt(dateMatch[1], 10);
     const mStr = dateMatch[2].slice(0, 3).toLowerCase();
