@@ -47,15 +47,15 @@ EXPECTED JSON SCHEMA:
 
 EXTRACTION RULES:
 1. "category": Must be strictly one of: "flight", "railway", "hotel", "cab", "bus".
-2. "provider": Airline name (e.g. IndiGo, Air India, Emirates), Train service (e.g. IRCTC / Vande Bharat), Hotel name, or Cab provider.
-3. "ticket_number": PNR (6-alphanumeric or 10-digit), Flight Number (e.g. 6E-804), Hotel Confirmation Number, or Booking ID.
-4. "from_location": Origin airport/station/city (e.g. "DEL (Delhi Indira Gandhi T3)", "New Delhi Railway Station NDLS"). For hotel, city location.
-5. "to_location": Destination airport/station/city (e.g. "BOM (Mumbai T2)", "Mumbai Central MMCT"). For hotel, hotel address/name.
-6. "departure_time": Departure date & time (e.g. "24 May 2025, 14:00") or hotel check-in date/time.
-7. "arrival_time": Arrival date & time (e.g. "24 May 2025, 16:30") or hotel check-out date/time.
-8. "seat_or_room": Seat number (e.g. "14F", "Coach B2 Seat 45") or Hotel Room number/type.
-9. "notes": Passenger name(s), terminal, gate, baggage allowance, or class.
-10. MANDATORY: If any field is NOT found or cannot be determined with certainty from the text, you MUST set its value to null. DO NOT fabricate or assume values.
+2. "provider": Airline name (e.g. IndiGo, Air India, Emirates), Hotel name (e.g. Taj Lands End, StayPulse), Train service (e.g. IRCTC / Vande Bharat), or Cab provider.
+3. "ticket_number": PNR / Booking Reference (e.g. "SP-FN47FY", "STAY-79853R") or Flight/Train Number (e.g. "6E-2041", "AI-804"). Prefer the PNR / Booking Reference if present.
+4. "from_location": Origin airport/station/city (e.g. "DEL (New Delhi Terminal T3)"). For hotel, city location (e.g. "Mumbai").
+5. "to_location": Destination airport/station/hotel (e.g. "BOM (Mumbai Terminal T2)"). For hotel, hotel property name and address.
+6. "departure_time": Departure time or date & time (e.g. "11:30" or "24 May 2025, 14:00") or hotel check-in date/time. If only time is mentioned (e.g. "11:30"), extract the time string.
+7. "arrival_time": Arrival time or date & time (e.g. "13:45" or "24 May 2025, 16:30") or hotel check-out date/time. If only time is mentioned (e.g. "13:45"), extract the time string.
+8. "seat_or_room": Seat number or booking status (e.g. "14F", "Confirmed Seat (Economy)") or Hotel Room number/slot (e.g. "Deluxe Sea-View King Room"). Do NOT confuse departure/arrival times (like 13:45) with seat numbers.
+9. "notes": Passenger/Guest name(s), baggage allowance, class, payment amount, or contact details.
+10. MANDATORY: If any field is NOT found or cannot be determined with certainty from the text, you MUST set its value to null. DO NOT fabricate values.
 11. Return ONLY pure valid JSON, no markdown code blocks, no explanation."""
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
