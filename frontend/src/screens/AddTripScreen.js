@@ -34,6 +34,8 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
   const [activeMode, setActiveMode] = useState('UPLOAD_TICKETS'); // 'UPLOAD_TICKETS' | 'PLAN_TRIP'
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showPlaceholders, setShowPlaceholders] = useState(true);
+  const ph = (text) => (showPlaceholders ? text : '');
 
   // ----------------------------------------------------
   // Option 1 State: Upload / Add Existing Booked Tickets
@@ -352,7 +354,31 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
     <View style={styles.activeScreenBox}>
       {/* Title */}
       <View style={styles.screenTitleRow}>
-        <Text style={styles.screenTitleSerif}>Add Trip</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={styles.screenTitleSerif}>Add Trip</Text>
+          <TouchableOpacity
+            style={styles.placeholderToggleWrap}
+            onPress={() => setShowPlaceholders(!showPlaceholders)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.placeholderToggleTrack,
+                showPlaceholders && styles.placeholderToggleTrackActive,
+              ]}
+            >
+              <View
+                style={[
+                  styles.placeholderToggleThumb,
+                  showPlaceholders && styles.placeholderToggleThumbActive,
+                ]}
+              />
+            </View>
+            <Text style={styles.placeholderToggleLabel}>
+              {showPlaceholders ? 'Show' : 'Hide'}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.screenStepBadge}>STAGE 01</Text>
       </View>
 
@@ -420,7 +446,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
               style={styles.ticketUnderlineInput}
               value={existingTripName}
               onChangeText={setExistingTripName}
-              placeholder="Type trip reference name (e.g. Mumbai Conference / Goa Vacation)"
+              placeholder={ph('Type trip reference name (e.g. Mumbai Conference / Goa Vacation)')}
               placeholderTextColor="#C4BCB3"
             />
           </View>
@@ -669,7 +695,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           value={t.provider}
                           onChangeText={(val) => handleUpdateTicket(t.id, 'provider', val)}
                           placeholder={
-                            t.category === 'hotel' ? 'Taj, Marriott, etc.' : 'IndiGo, IRCTC, etc.'
+                            ph(t.category === 'hotel' ? 'Taj, Marriott, etc.' : 'IndiGo, IRCTC, etc.')
                           }
                           placeholderTextColor="#C4BCB3"
                         />
@@ -693,7 +719,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           ]}
                           value={t.ticketNumber}
                           onChangeText={(val) => handleUpdateTicket(t.id, 'ticketNumber', val)}
-                          placeholder="e.g. 6E-XY9821 / HTL-5412"
+                          placeholder={ph('e.g. 6E-XY9821 / HTL-5412')}
                           placeholderTextColor="#C4BCB3"
                         />
                       </View>
@@ -719,7 +745,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           ]}
                           value={t.fromLocation}
                           onChangeText={(val) => handleUpdateTicket(t.id, 'fromLocation', val)}
-                          placeholder="Departure origin location"
+                          placeholder={ph('Departure origin location')}
                           placeholderTextColor="#C4BCB3"
                         />
                       </View>
@@ -742,7 +768,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           ]}
                           value={t.toLocation}
                           onChangeText={(val) => handleUpdateTicket(t.id, 'toLocation', val)}
-                          placeholder="Arrival destination location"
+                          placeholder={ph('Arrival destination location')}
                           placeholderTextColor="#C4BCB3"
                         />
                       </View>
@@ -765,7 +791,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           mode="datetime"
                           value={t.departureTime}
                           onChange={(val) => handleUpdateTicket(t.id, 'departureTime', val)}
-                          placeholder="Select departure date & time"
+                          placeholder={ph('Select departure date & time')}
                           hasWarning={t.missingFields.includes('departureTime')}
                         />
                       </View>
@@ -785,7 +811,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           mode="datetime"
                           value={t.arrivalTime}
                           onChange={(val) => handleUpdateTicket(t.id, 'arrivalTime', val)}
-                          placeholder="Select arrival date & time"
+                          placeholder={ph('Select arrival date & time')}
                           hasWarning={t.missingFields.includes('arrivalTime')}
                         />
                       </View>
@@ -812,7 +838,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         ]}
                         value={t.seatOrRoom}
                         onChangeText={(val) => handleUpdateTicket(t.id, 'seatOrRoom', val)}
-                        placeholder="e.g. 14F (Window) / Coach B2 Seat 45 / Room 402"
+                        placeholder={ph('e.g. 14F (Window) / Coach B2 Seat 45 / Room 402')}
                         placeholderTextColor="#C4BCB3"
                       />
                     </View>
@@ -824,7 +850,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         style={styles.ticketUnderlineInput}
                         value={t.notes}
                         onChangeText={(val) => handleUpdateTicket(t.id, 'notes', val)}
-                        placeholder="e.g. Passenger names, terminal, gate, baggage details"
+                        placeholder={ph('e.g. Passenger names, terminal, gate, baggage details')}
                         placeholderTextColor="#C4BCB3"
                       />
                     </View>
@@ -943,7 +969,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
               style={styles.tripBlueprintTitleInput}
               value={plannedTripName}
               onChangeText={setPlannedTripName}
-              placeholder="Trip title (e.g. Delhi to Mumbai Tour)"
+              placeholder={ph('Trip title (e.g. Delhi to Mumbai Tour)')}
               placeholderTextColor="#B0A89F"
             />
 
@@ -953,7 +979,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                   mode="date"
                   value={planStartDate}
                   onChange={setPlanStartDate}
-                  placeholder="Trip start date"
+                  placeholder={ph('Trip start date')}
                 />
               </View>
               <View style={styles.tripMetaPill}>
@@ -962,7 +988,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                   style={styles.tripMetaInput}
                   value={planPeopleCount}
                   onChangeText={setPlanPeopleCount}
-                  placeholder="2"
+                  placeholder={ph('2')}
                   keyboardType="numeric"
                   placeholderTextColor="#B0A89F"
                 />
@@ -1043,7 +1069,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         style={styles.stationUnderlineInput}
                         value={leg.fromPoint}
                         onChangeText={(val) => handleUpdateLeg(leg.id, 'fromPoint', val)}
-                        placeholder="Type departure location"
+                        placeholder={ph('Type departure location')}
                         placeholderTextColor="#B0A89F"
                       />
                       <View style={{ marginTop: 4, width: '100%' }}>
@@ -1051,7 +1077,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           mode="time"
                           value={leg.departureTime}
                           onChange={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
-                          placeholder="Time (e.g. 11:30)"
+                          placeholder={ph('Time (e.g. 11:30)')}
                         />
                       </View>
                     </View>
@@ -1071,7 +1097,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         style={[styles.stationUnderlineInput, { textAlign: 'right' }]}
                         value={leg.toPoint}
                         onChangeText={(val) => handleUpdateLeg(leg.id, 'toPoint', val)}
-                        placeholder="Type arrival location"
+                        placeholder={ph('Type arrival location')}
                         placeholderTextColor="#B0A89F"
                       />
                       <View style={{ marginTop: 4, width: '100%', alignItems: 'flex-end' }}>
@@ -1079,7 +1105,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           mode="time"
                           value={leg.arrivalTime}
                           onChange={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
-                          placeholder="Time (e.g. 12:15)"
+                          placeholder={ph('Time (e.g. 12:15)')}
                           alignRight={true}
                         />
                       </View>
@@ -1095,7 +1121,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         style={styles.budgetUnderlineInput}
                         value={leg.estimatedBudget}
                         onChangeText={(val) => handleUpdateLeg(leg.id, 'estimatedBudget', val)}
-                        placeholder="0"
+                        placeholder={ph('0')}
                         keyboardType="numeric"
                         placeholderTextColor="#B0A89F"
                       />
@@ -1138,7 +1164,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                   style={styles.stationUnderlineInput}
                   value={stayPlan.cityOrHotel}
                   onChangeText={(val) => setStayPlan({ ...stayPlan, cityOrHotel: val })}
-                  placeholder="Enter hotel name or city"
+                  placeholder={ph('Enter hotel name or city')}
                   placeholderTextColor="#B0A89F"
                 />
               </View>
@@ -1150,7 +1176,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                     style={styles.hotelMetricTileVal}
                     value={stayPlan.daysCount}
                     onChangeText={(val) => setStayPlan({ ...stayPlan, daysCount: val })}
-                    placeholder="Nights (e.g. 3)"
+                    placeholder={ph('Nights (e.g. 3)')}
                     keyboardType="numeric"
                     placeholderTextColor="#B0A89F"
                   />
@@ -1162,7 +1188,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                     style={styles.hotelMetricTileVal}
                     value={stayPlan.hotelBudget}
                     onChangeText={(val) => setStayPlan({ ...stayPlan, hotelBudget: val })}
-                    placeholder="0"
+                    placeholder={ph('0')}
                     keyboardType="numeric"
                     placeholderTextColor="#B0A89F"
                   />
@@ -1174,7 +1200,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                     mode="date"
                     value={stayPlan.checkinDate}
                     onChange={(val) => setStayPlan({ ...stayPlan, checkinDate: val })}
-                    placeholder="Check-in date"
+                    placeholder={ph('Check-in date')}
                   />
                 </View>
               </View>

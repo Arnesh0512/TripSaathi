@@ -355,6 +355,47 @@ export const styles = StyleSheet.create({
     borderRadius: 4,
     letterSpacing: 0.5,
   },
+
+  // Placeholder Toggle Switch (Inline with Add Trip Title)
+  placeholderToggleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    cursor: 'pointer',
+  },
+  placeholderToggleTrack: {
+    width: 32,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#D1CBC2',
+    padding: 2,
+    justifyContent: 'center',
+  },
+  placeholderToggleTrackActive: {
+    backgroundColor: THEME.primary,
+  },
+  placeholderToggleThumb: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  placeholderToggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  placeholderToggleLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B6359',
+    letterSpacing: 0.3,
+  },
   impactSubText: {
     fontSize: 12,
     color: THEME.textSecondary,
