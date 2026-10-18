@@ -31,7 +31,7 @@
         "projectId": "5f9a506d-db2a-49f1-b765-71d563afa040"
       }
     },
-    "owner": "arnesh512",
+    "owner": "arnesh512s-team",
     "plugins": [
       "expo-web-browser",
       "@react-native-google-signin/google-signin"
