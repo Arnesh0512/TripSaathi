@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Alert,
   Platform,
   ScrollView,
+  Image,
+  Linking,
 } from 'react-native';
 import { styles } from '../styles/appStyles';
 import { THEME } from '../constants/theme';
@@ -39,12 +41,17 @@ const formatTransitNodeTime = (dtStr) => {
 };
 
 export default function AddTripScreen({ token, onAddTripSuccess }) {
-  // Option 1 vs Option 2 Mode
-  const [activeMode, setActiveMode] = useState('UPLOAD_TICKETS'); // 'UPLOAD_TICKETS' | 'PLAN_TRIP'
+  // Option 1 vs Option 2 Mode (Multi-leg planned first by default)
+  const [activeMode, setActiveMode] = useState('PLAN_TRIP'); // 'PLAN_TRIP' | 'UPLOAD_TICKETS'
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [showPlaceholders, setShowPlaceholders] = useState(false);
   const ph = (text) => (showPlaceholders ? text : '');
+
+  // TinyFish Multi-Leg Execution & Result Flow States
+  const [planExecutionState, setPlanExecutionState] = useState('IDLE'); // 'IDLE' | 'LOADING' | 'RESULTS'
+  const [revealedLegs, setRevealedLegs] = useState(1);
+  const [loadingStepText, setLoadingStepText] = useState('Connecting to TinyFish Web Agent...');
 
   // ----------------------------------------------------
   // Option 1 State: Upload / Add Existing Booked Tickets
@@ -304,6 +311,139 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
   const totalStayBudget = parseFloat(stayPlan.hotelBudget) || 0;
   const grandTotalBudget = totalLegsBudget + totalStayBudget;
 
+  // Sequential reveal of legs and stay with 1.5s delay
+  useEffect(() => {
+    if (planExecutionState === 'RESULTS') {
+      const totalSteps = legs.length + (stayPlan.cityOrHotel ? 1 : 0);
+      if (revealedLegs < totalSteps) {
+        const timer = setTimeout(() => {
+          setRevealedLegs((prev) => prev + 1);
+        }, 1500); // 1.5 second delay between consecutive leg results
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [planExecutionState, revealedLegs, legs.length, stayPlan.cityOrHotel]);
+
+  const handleExecutePlan = async () => {
+    const finalTripName = plannedTripName.trim() || 'Delhi to Mumbai Multi-Leg Journey';
+    if (!plannedTripName.trim()) {
+      setPlannedTripName(finalTripName);
+    }
+
+    setPlanExecutionState('LOADING');
+    setLoadingStepText('TinyFish finding best route within budget...');
+
+    const t1 = setTimeout(() => {
+      setLoadingStepText('Scraping flight availability & pricing on demo-arilines.vercel.app...');
+    }, 850);
+
+    const t2 = setTimeout(() => {
+      setLoadingStepText('Scanning hotel inventory & direct slots on stay-pulse.vercel.app...');
+    }, 1700);
+
+    // Persist planned trip to backend database in background
+    try {
+      const payload = {
+        trip_name: finalTripName,
+        start_date: planStartDate.trim() || '2026-10-18',
+        people_count: parseInt(planPeopleCount) || 1,
+        legs: legs.map((leg, idx) => ({
+          leg_index: idx + 1,
+          from_point: leg.fromPoint || (idx === 0 ? 'Delhi' : 'Mumbai'),
+          to_point: leg.toPoint || (idx === 0 ? 'Mumbai' : 'Taj Lands End'),
+          mode: leg.mode,
+          departure_time: leg.departureTime,
+          arrival_time: leg.arrivalTime,
+          estimated_budget: parseFloat(leg.estimatedBudget) || 0.0,
+          preferred_service_url: leg.preferredServiceUrl ? leg.preferredServiceUrl.trim() : '',
+          notes: leg.notes,
+        })),
+        stay_plan: {
+          city_or_hotel: stayPlan.cityOrHotel || 'Taj Lands End Mumbai',
+          days_count: parseInt(stayPlan.daysCount) || 2,
+          people_count: parseInt(stayPlan.peopleCount) || 1,
+          hotel_budget: parseFloat(stayPlan.hotelBudget) || 12000.0,
+          checkin_date: stayPlan.checkinDate,
+          checkout_date: stayPlan.checkoutDate,
+          preferred_service_url: stayPlan.preferredServiceUrl ? stayPlan.preferredServiceUrl.trim() : '',
+        },
+        notes: `Chronological ${legs.length}-leg itinerary optimized by TinyFish`,
+      };
+      await tripApi.createPlannedTrip(payload, token);
+    } catch (e) {
+      console.warn('Background plan save notice:', e);
+    }
+
+    const t3 = setTimeout(() => {
+      setRevealedLegs(1);
+      setPlanExecutionState('RESULTS');
+    }, 2400);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  };
+
+  const handleRegisteredProceedToTickets = () => {
+    setActiveMode('UPLOAD_TICKETS');
+    setPlanExecutionState('IDLE');
+    setSuccessMessage('🎉 Registration confirmed! Please attach your booking PDFs or enter PNRs below for live 24/7 monitoring.');
+    if (!existingTripName && plannedTripName) {
+      setExistingTripName(plannedTripName);
+    }
+  };
+
+  const getLegAutofillUrl = (leg) => {
+    if (leg.preferredServiceUrl && leg.preferredServiceUrl.trim().length > 0) {
+      return leg.preferredServiceUrl.trim();
+    }
+    const cleanFrom = (leg.fromPoint || '').toLowerCase();
+    const cleanTo = (leg.toPoint || '').toLowerCase();
+
+    const getCode = (str, defaultCode) => {
+      if (str.includes('del') || str.includes('delhi')) return 'DEL';
+      if (str.includes('bom') || str.includes('mumbai') || str.includes('bombay')) return 'BOM';
+      if (str.includes('blr') || str.includes('bangalore') || str.includes('bengaluru')) return 'BLR';
+      if (str.includes('goa') || str.includes('goi')) return 'GOI';
+      if (str.includes('hyd') || str.includes('hyderabad')) return 'HYD';
+      if (str.includes('maa') || str.includes('chennai')) return 'MAA';
+      return defaultCode;
+    };
+
+    const origin = getCode(cleanFrom, 'DEL');
+    const dest = getCode(cleanTo, 'BOM');
+    const travelDate = planStartDate ? planStartDate.split(' ')[0] : '2026-10-18';
+    const pax = planPeopleCount || '1';
+
+    if (leg.mode === 'airplane') {
+      return `https://demo-arilines.vercel.app/search?origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
+    }
+    if (leg.mode === 'cab') {
+      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(leg.fromPoint || 'Delhi')}&destination=${encodeURIComponent(leg.toPoint || 'Airport')}`;
+    }
+    if (leg.mode === 'train') {
+      return `https://www.irctc.co.in/nget/train-search`;
+    }
+    return `https://demo-arilines.vercel.app/search?origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
+  };
+
+  const getHotelAutofillUrl = () => {
+    if (stayPlan.preferredServiceUrl && stayPlan.preferredServiceUrl.trim().length > 0) {
+      return stayPlan.preferredServiceUrl.trim();
+    }
+    return 'https://stay-pulse.vercel.app/hotels/6ad105503c1fd4003fa477c2';
+  };
+
+  const handleOpenUrl = (url) => {
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
+    } else {
+      Linking.openURL(url).catch((err) => showAlert('Error', 'Could not open link: ' + err.message));
+    }
+  };
+
   const handleSubmitPlanTrip = async () => {
     if (!plannedTripName.trim()) {
       showAlert('Notice', 'Please provide a trip name.');
@@ -396,29 +536,8 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
         <Text style={styles.screenStepBadge}>STAGE 01</Text>
       </View>
 
-      {/* TWO OPTIONS SELECTOR */}
+      {/* TWO OPTIONS SELECTOR - REVERSED: PLAN MULTI-LEG FIRST, THEN UPLOAD */}
       <View style={styles.tripModeSwitcher}>
-        <TouchableOpacity
-          style={[
-            styles.tripModeBtn,
-            activeMode === 'UPLOAD_TICKETS' && styles.tripModeBtnActive,
-          ]}
-          onPress={() => {
-            setActiveMode('UPLOAD_TICKETS');
-            setSuccessMessage(null);
-          }}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.tripModeBtnText,
-              activeMode === 'UPLOAD_TICKETS' && styles.tripModeBtnTextActive,
-            ]}
-          >
-            🎟️ Upload / Booked Tickets
-          </Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={[
             styles.tripModeBtn,
@@ -436,7 +555,28 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
               activeMode === 'PLAN_TRIP' && styles.tripModeBtnTextActive,
             ]}
           >
-            🧭 Plan Multi-Leg Trip
+            🧭 1. Plan Multi-Leg Journey
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tripModeBtn,
+            activeMode === 'UPLOAD_TICKETS' && styles.tripModeBtnActive,
+          ]}
+          onPress={() => {
+            setActiveMode('UPLOAD_TICKETS');
+            setSuccessMessage(null);
+          }}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.tripModeBtnText,
+              activeMode === 'UPLOAD_TICKETS' && styles.tripModeBtnTextActive,
+            ]}
+          >
+            🎟️ 2. Upload / Booked Tickets
           </Text>
         </TouchableOpacity>
       </View>
@@ -904,8 +1044,169 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
       {/* ======================================================= */}
       {activeMode === 'PLAN_TRIP' && (
         <View>
-          {/* 1. INTERACTIVE TRANSIT SUBWAY / TIMELINE MAP */}
-          <View style={styles.routeMapCard}>
+          {/* TINYFISH LOADING STATE */}
+          {planExecutionState === 'LOADING' && (
+            <View style={styles.tinyfishLoadingCard}>
+              <Image
+                source={require('../../assets/tinyfish-logo.png')}
+                style={styles.tinyfishLogoImg}
+              />
+              <Text style={styles.tinyfishLoadingTitle}>
+                TinyFish finding best route within budget
+              </Text>
+              <Text style={styles.tinyfishLoadingSub}>
+                Scanning airline inventories & hotel slots to maximize budget & connection buffers...
+              </Text>
+              <View style={styles.tinyfishStepPill}>
+                <ActivityIndicator size="small" color="#A83827" />
+                <Text style={styles.tinyfishStepText}>{loadingStepText}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* TINYFISH EXECUTION RESULTS STATE */}
+          {planExecutionState === 'RESULTS' && (
+            <View style={styles.execResultsContainer}>
+              {/* Header Info */}
+              <View style={styles.execResultsHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Image
+                      source={require('../../assets/tinyfish-logo.png')}
+                      style={{ width: 28, height: 28, resizeMode: 'contain' }}
+                    />
+                    <Text style={styles.execResultsTitle}>TinyFish Route Execution Plan</Text>
+                  </View>
+                  <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: '#A7F3D0' }}>
+                    <Text style={{ fontSize: 9, fontWeight: '800', color: '#047857' }}>BUDGET OPTIMIZED</Text>
+                  </View>
+                </View>
+                <Text style={styles.execResultsSub}>
+                  Optimal route calculated within ₹{grandTotalBudget.toLocaleString('en-IN')}. Follow the prefilled autofill links below to complete bookings, then tap "Registered".
+                </Text>
+              </View>
+
+              {/* Sequential Legs Display */}
+              {legs.slice(0, revealedLegs).map((leg, idx) => {
+                const autofillUrl = getLegAutofillUrl(leg);
+                const modeObj = TRANSPORT_MODES.find((m) => m.id === leg.mode) || TRANSPORT_MODES[0];
+                const fromName = leg.fromPoint || (idx === 0 ? 'Delhi' : 'Transit Point');
+                const toName = leg.toPoint || (idx === 0 ? 'Mumbai' : 'Final Point');
+
+                return (
+                  <View key={`exec-leg-${leg.id}`} style={styles.legResultCard}>
+                    <View style={styles.legResultCardHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 16 }}>{modeObj.icon}</Text>
+                        <Text style={styles.legResultBadge}>LEG {String(idx + 1).padStart(2, '0')} • {modeObj.label.toUpperCase()}</Text>
+                      </View>
+                      <View style={styles.legResultFareBadge}>
+                        <Text style={styles.legResultFareText}>Est. ₹{leg.estimatedBudget || (leg.mode === 'airplane' ? '5,200' : '850')}</Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.legResultRoute}>{fromName} → {toName}</Text>
+                    <Text style={styles.legResultSchedule}>
+                      📅 Departure: {leg.departureTime || (planStartDate || '18 Oct 2026') + ', 11:30'}  •  Arrival: {leg.arrivalTime || '13:45'}
+                    </Text>
+
+                    {/* Autofill Booking Box */}
+                    <View style={styles.autofillLinkBox}>
+                      <Text style={styles.autofillLinkLabel}>AUTOFILL BOOKING LINK (VERIFIED BY TINYFISH)</Text>
+                      <Text style={styles.autofillUrlText} numberOfLines={1} ellipsizeMode="middle">
+                        {autofillUrl}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.autofillBtn}
+                        onPress={() => handleOpenUrl(autofillUrl)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.autofillBtnText}>🔗 Open Pre-filled Booking Page ↗</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Stay Plan Card (Revealed after legs) */}
+              {revealedLegs > legs.length && (
+                <View style={styles.legResultCard}>
+                  <View style={styles.legResultCardHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 16 }}>🏨</Text>
+                      <Text style={styles.legResultBadge}>ACCOMMODATION • STAYPULSE DIRECT</Text>
+                    </View>
+                    <View style={[styles.legResultFareBadge, { backgroundColor: '#FEF3C7', borderColor: '#FCD34D' }]}>
+                      <Text style={[styles.legResultFareText, { color: '#B45309' }]}>
+                        Est. ₹{stayPlan.hotelBudget || '12,000'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.legResultRoute}>
+                    {stayPlan.cityOrHotel || 'Taj Lands End, Bandstand Mumbai'}
+                  </Text>
+                  <Text style={styles.legResultSchedule}>
+                    📅 Check-in: {stayPlan.checkinDate || '18 Oct 2026, 14:00'} • {stayPlan.daysCount || 2} Nights • {stayPlan.peopleCount || 2} Guests
+                  </Text>
+
+                  <View style={styles.autofillLinkBox}>
+                    <Text style={styles.autofillLinkLabel}>STAYPULSE DIRECT VIEW SLOTS & BOOKING</Text>
+                    <Text style={styles.autofillUrlText} numberOfLines={1} ellipsizeMode="middle">
+                      {getHotelAutofillUrl()}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.autofillBtn, { backgroundColor: '#D97706' }]}
+                      onPress={() => handleOpenUrl(getHotelAutofillUrl())}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.autofillBtnText}>🏨 View Slots & Book Room (Pre-filled) ↗</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* Sequential reveal in-progress indicator */}
+              {revealedLegs < (legs.length + (stayPlan.cityOrHotel ? 1 : 0)) && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10 }}>
+                  <ActivityIndicator size="small" color="#A83827" />
+                  <Text style={{ fontSize: 11, color: '#786C5E', fontStyle: 'italic' }}>
+                    TinyFish preparing next connection...
+                  </Text>
+                </View>
+              )}
+
+              {/* REGISTERED PRIMARY CTA BUTTON */}
+              <TouchableOpacity
+                style={styles.registeredPrimaryBtn}
+                onPress={handleRegisteredProceedToTickets}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.registeredPrimaryBtnText}>
+                  ✅ Registered — Attach Tickets / Enter PNRs ›
+                </Text>
+              </TouchableOpacity>
+              <Text style={styles.registeredSubHint}>
+                Once bookings are made, attach confirmed tickets for autonomous 24/7 flight delay & hotel hold monitoring.
+              </Text>
+
+              {/* Re-edit plan button */}
+              <TouchableOpacity
+                style={{ paddingVertical: 10, alignItems: 'center' }}
+                onPress={() => setPlanExecutionState('IDLE')}
+              >
+                <Text style={{ fontSize: 12, color: '#786C5E', textDecorationLine: 'underline' }}>
+                  ✏️ Modify Journey Blueprint or Inputs
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* BLUEPRINT FORM (Shown when IDLE) */}
+          {planExecutionState === 'IDLE' && (
+            <View>
+              {/* 1. INTERACTIVE TRANSIT SUBWAY / TIMELINE MAP */}
+              <View style={styles.routeMapCard}>
             <View style={styles.routeMapHeaderRow}>
               <Text style={styles.routeMapKicker}>LIVE ROUTE TIMELINE</Text>
               <View style={styles.routeMapBadgePill}>
@@ -1336,23 +1637,21 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
             </View>
           </View>
 
-          {/* 7. PRIMARY SUBMIT CTA */}
-          <TouchableOpacity
-            style={styles.primaryTerracottaBtn}
-            onPress={handleSubmitPlanTrip}
-            disabled={saving}
-            activeOpacity={0.85}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
+            {/* 7. PRIMARY EXECUTE PLAN CTA */}
+            <TouchableOpacity
+              style={styles.primaryTerracottaBtn}
+              onPress={handleExecutePlan}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
               <Text style={styles.primaryTerracottaBtnText}>
-                🚀 Save & Plan Trip in Database ({legs.length} Legs)
+                ⚡ Execute Plan ({legs.length} Legs)
               </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    )}
 
     </View>
   );

@@ -29,7 +29,7 @@ import AddTripScreen from './src/screens/AddTripScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import ImpactScreen from './src/screens/ImpactScreen';
 import RecoveryScreen from './src/screens/RecoveryScreen';
-import TrackerScreen from './src/screens/TrackerScreen';
+import MonitorScreen from './src/screens/MonitorScreen';
 
 export default function App() {
   const { width: windowWidth } = useWindowDimensions();
@@ -37,7 +37,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('DASHBOARD'); // 'DASHBOARD' | 'ADD_TRIP' | 'IMPACT' | 'RECOVERY' | 'TRACKER'
+  const [activeTab, setActiveTab] = useState('DASHBOARD'); // 'DASHBOARD' | 'ADD_TRIP' | 'MONITOR' | 'IMPACT' | 'RECOVERY'
+  const [hasDelayAlert, setHasDelayAlert] = useState(true);
   const [dashboardSubtab, setDashboardSubtab] = useState('Overview'); // 'Overview' | 'Updates' | 'Alerts'
   const [phoneFrameMode, setPhoneFrameMode] = useState(true); // Toggle phone frame vs full width on web
 
@@ -287,7 +288,7 @@ export default function App() {
               {activeTab === 'ADD_TRIP' && (
                 <AddTripScreen
                   token={token}
-                  onAddTripSuccess={() => setActiveTab('DASHBOARD')}
+                  onAddTripSuccess={() => setActiveTab('MONITOR')}
                 />
               )}
 
@@ -299,19 +300,26 @@ export default function App() {
                 />
               )}
 
+              {activeTab === 'MONITOR' && (
+                <MonitorScreen
+                  onViewImpact={() => setActiveTab('IMPACT')}
+                  onNavigateToAddTrip={() => setActiveTab('ADD_TRIP')}
+                  onTriggerDelayAlert={(active) => setHasDelayAlert(active)}
+                  isDelayAlertActive={hasDelayAlert}
+                />
+              )}
+
               {activeTab === 'IMPACT' && (
                 <ImpactScreen onNavigateToRecovery={() => setActiveTab('RECOVERY')} />
               )}
 
               {activeTab === 'RECOVERY' && (
-                <RecoveryScreen onSelectRecoveryAction={() => setActiveTab('TRACKER')} />
+                <RecoveryScreen />
               )}
-
-              {activeTab === 'TRACKER' && <TrackerScreen />}
             </ScrollView>
 
             {/* BOTTOM NAVIGATION TAB BAR */}
-            <TabBar activeTab={activeTab} onSelectTab={setActiveTab} />
+            <TabBar activeTab={activeTab} onSelectTab={setActiveTab} hasImpactAlert={hasDelayAlert} />
 
             {/* HOME INDICATOR BAR (Mobile Bezel) */}
             <View style={styles.homeIndicatorBar} />
