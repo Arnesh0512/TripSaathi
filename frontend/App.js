@@ -277,6 +277,22 @@ export default function App() {
             <Header
               user={user}
               onOpenProfile={() => setProfileModalVisible(true)}
+              onGoogleSignIn={() => {
+                if (Platform.OS === 'web') {
+                  if (window.google?.accounts?.id) {
+                    window.google.accounts.id.prompt((notification) => {
+                      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        // Fallback to dev test login if GSI popup is blocked by browser/localhost
+                        exchangeGoogleTokenWithBackend('mock_google_token_dev');
+                      }
+                    });
+                  } else {
+                    exchangeGoogleTokenWithBackend('mock_google_token_dev');
+                  }
+                } else {
+                  handleMobileGoogleLogin();
+                }
+              }}
               onFastSignIn={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
             />
 
@@ -299,18 +315,12 @@ export default function App() {
               contentContainerStyle={styles.screenScrollContent}
               showsVerticalScrollIndicator={false}
             >
-              {/* GOOGLE SIGN IN CARD (If not signed in) */}
-              {!token && (
-                <AuthCard
-                  loading={loading}
-                  onMobileGoogleLogin={handleMobileGoogleLogin}
-                  onFastSignIn={() => exchangeGoogleTokenWithBackend('mock_google_token_dev')}
-                />
-              )}
-
               {/* SCREENS */}
               {activeTab === 'ADD_TRIP' && (
-                <AddTripScreen onAddTripSuccess={() => setActiveTab('DASHBOARD')} />
+                <AddTripScreen
+                  token={token}
+                  onAddTripSuccess={() => setActiveTab('DASHBOARD')}
+                />
               )}
 
               {activeTab === 'DASHBOARD' && (

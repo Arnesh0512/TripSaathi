@@ -59,3 +59,39 @@ export const userApi = {
     });
   },
 };
+
+// Trip Management API
+export const tripApi = {
+  createExistingTrip: async (tripData, jwtToken = null) => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (jwtToken) {
+      headers.Authorization = `Bearer ${jwtToken}`;
+    }
+    return await callBackend('/trip/existing', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(tripData),
+    });
+  },
+  createPlannedTrip: async (tripData, jwtToken = null) => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (jwtToken) {
+      headers.Authorization = `Bearer ${jwtToken}`;
+    }
+    return await callBackend('/trip/plan', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(tripData),
+    });
+  },
+  getMyTrips: async (jwtToken = null) => {
+    const headers = {};
+    if (jwtToken) {
+      headers.Authorization = `Bearer ${jwtToken}`;
+    }
+    return await callBackend('/trip/my-trips', {
+      method: 'GET',
+      headers,
+    });
+  },
+};

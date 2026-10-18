@@ -1,0 +1,154 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from bson import ObjectId
+from typing import Optional
+from database import trips_collection
+from verify.token import verify_access_token
+from verify.user import verify_user_payload
+from schemas.trip import ExistingTripCreate, PlanTripCreate
+from utils.time import generate_timestamp
+
+security = HTTPBearer(auto_error=False)
+
+router = APIRouter(prefix="/trip", tags=["Trip Management"])
+
+def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    if not credentials:
+        return None
+    try:
+        payload = verify_access_token(credentials.credentials)
+        user, user_id, email = verify_user_payload(payload)
+        return {
+            "user_id": str(user_id),
+            "email": email,
+            "name": user.get("name", "")
+        }
+    except Exception:
+        return None
+
+@router.post("/existing")
+def add_existing_trip(
+    data: ExistingTripCreate,
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
+    """
+    Option 1: Upload / Register existing booked tickets (Flight, Railway, Hotel, Cab, Bus).
+    TripSaathi stores and monitors these tickets for live delays & downstream impacts.
+    """
+    if not data.trip_name.strip():
+        raise HTTPException(status_code=400, detail="Trip name is required")
+
+    tickets_data = [t.model_dump() for t in data.tickets]
+    
+    trip_doc = {
+        "trip_type": "EXISTING_BOOKED",
+        "trip_name": data.trip_name.strip(),
+        "tickets": tickets_data,
+        "tickets_count": len(tickets_data),
+        "notes": data.notes or "",
+        "user_id": current_user["user_id"] if current_user else None,
+        "user_email": current_user["email"] if current_user else "guest_traveler",
+        "monitoring_status": "ACTIVE_MONITORING",
+        "created_at": generate_timestamp(),
+        "updated_at": generate_timestamp(),
+    }
+
+    try:
+        result = trips_collection.insert_one(trip_doc)
+        trip_doc["_id"] = str(result.inserted_id)
+        return {
+            "status": "SUCCESS",
+            "message": f"Successfully registered {len(tickets_data)} ticket(s) for live monitoring",
+            "trip_id": str(result.inserted_id),
+            "trip": trip_doc
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database insert failed: {str(e)}")
+
+@router.post("/plan")
+def plan_new_trip(
+    data: PlanTripCreate,
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
+    """
+    Option 2: Plan multi-leg chronological trip (Home -> Airport cab, DEL -> BOM plane,
+    Airport -> Hotel cab, plus hotel stay plan and budget).
+    """
+    if not data.trip_name.strip():
+        raise HTTPException(status_code=400, detail="Trip name is required")
+
+    legs_data = [leg.model_dump() for leg in data.legs]
+    stay_data = data.stay_plan.model_dump() if data.stay_plan else None
+
+    # Calculate total estimated budget across legs + stay
+    legs_budget = sum((leg.get("estimated_budget") or 0.0) for leg in legs_data)
+    stay_budget = (stay_data.get("hotel_budget") or 0.0) if stay_data else 0.0
+    total_budget = legs_budget + stay_budget
+
+    trip_doc = {
+        "trip_type": "PLANNED_MULTI_MODAL",
+        "trip_name": data.trip_name.strip(),
+        "start_date": data.start_date or "",
+        "people_count": data.people_count or 1,
+        "legs": legs_data,
+        "legs_count": len(legs_data),
+        "stay_plan": stay_data,
+        "total_estimated_budget": total_budget,
+        "notes": data.notes or "",
+        "user_id": current_user["user_id"] if current_user else None,
+        "user_email": current_user["email"] if current_user else "guest_traveler",
+        "monitoring_status": "PLAN_SAVED",
+        "created_at": generate_timestamp(),
+        "updated_at": generate_timestamp(),
+    }
+
+    try:
+        result = trips_collection.insert_one(trip_doc)
+        trip_doc["_id"] = str(result.inserted_id)
+        return {
+            "status": "SUCCESS",
+            "message": f"Successfully planned multi-leg journey with {len(legs_data)} legs",
+            "trip_id": str(result.inserted_id),
+            "total_budget": total_budget,
+            "trip": trip_doc
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database insert failed: {str(e)}")
+
+@router.get("/my-trips")
+def get_user_trips(current_user: Optional[dict] = Depends(get_optional_user)):
+    """
+    Fetch all trips saved in TripSaathi MongoDB.
+    """
+    try:
+        query = {}
+        if current_user and current_user.get("user_id"):
+            query = {"$or": [{"user_id": current_user["user_id"]}, {"user_email": current_user["email"]}]}
+        
+        cursor = trips_collection.find(query).sort("created_at", -1).limit(20)
+        trips = []
+        for doc in cursor:
+            doc["_id"] = str(doc["_id"])
+            trips.append(doc)
+
+        return {
+            "status": "SUCCESS",
+            "count": len(trips),
+            "trips": trips
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+
+@router.get("/{trip_id}")
+def get_trip_detail(trip_id: str):
+    """
+    Fetch single trip by its MongoDB ObjectId.
+    """
+    try:
+        doc = trips_collection.find_one({"_id": ObjectId(trip_id)})
+        if not doc:
+            raise HTTPException(status_code=404, detail="Trip not found")
+        doc["_id"] = str(doc["_id"])
+        return doc
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid trip id or query error: {str(e)}")

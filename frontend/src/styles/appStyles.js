@@ -968,4 +968,336 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
   },
+
+  // Top Header Google Sign-In Button
+  headerGoogleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D6CFC3',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  headerGoogleLogo: {
+    width: 14,
+    height: 14,
+  },
+  headerGoogleBtnText: {
+    color: '#1E1B18',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Add Trip Mode Switcher (Option 1 vs Option 2)
+  tripModeSwitcher: {
+    flexDirection: 'row',
+    backgroundColor: THEME.bgAlt,
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  tripModeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tripModeBtnActive: {
+    backgroundColor: THEME.paper,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  tripModeBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.textSecondary,
+  },
+  tripModeBtnTextActive: {
+    color: THEME.primary,
+    fontWeight: '700',
+  },
+
+  // Hero Card for Mode
+  modeHeroCard: {
+    backgroundColor: THEME.paperSubtle,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+  },
+  modeHeroTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 3,
+  },
+  modeHeroDesc: {
+    fontSize: 11,
+    color: THEME.textSecondary,
+    lineHeight: 16,
+  },
+
+  // Ticket Card (Option 1)
+  ticketItemCard: {
+    backgroundColor: THEME.paper,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  ticketItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ticketItemBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.primary,
+    letterSpacing: 0.5,
+  },
+  ticketRemoveBtn: {
+    padding: 4,
+  },
+  ticketRemoveBtnText: {
+    color: '#B3261E',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // Type selection pills (Plane, Train, Hotel, Cab, Bus)
+  typePillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  typePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    backgroundColor: THEME.paperSubtle,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+  },
+  typePillActive: {
+    backgroundColor: THEME.primaryLight,
+    borderColor: THEME.primary,
+  },
+  typePillText: {
+    fontSize: 11,
+    color: THEME.textSecondary,
+    fontWeight: '600',
+  },
+  typePillTextActive: {
+    color: THEME.primary,
+    fontWeight: '700',
+  },
+
+  // Generic clean text inputs inside cards
+  formInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  formInputCol: {
+    flex: 1,
+  },
+  cleanTextInput: {
+    backgroundColor: THEME.paperSubtle,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    fontSize: 12,
+    color: THEME.text,
+  },
+  inputSmallLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+
+  // Document attachment simulated box
+  attachBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: THEME.primaryBorder,
+    borderStyle: 'dashed',
+    borderRadius: 6,
+    paddingVertical: 7,
+    backgroundColor: THEME.primaryLight,
+    marginTop: 4,
+  },
+  attachBtnText: {
+    fontSize: 11,
+    color: THEME.primary,
+    fontWeight: '600',
+  },
+  attachedFileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: THEME.bgAlt,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  attachedFileText: {
+    fontSize: 11,
+    color: THEME.text,
+    fontWeight: '500',
+  },
+
+  // Add another ticket / leg button
+  addAnotherDashedBtn: {
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginBottom: 14,
+    backgroundColor: THEME.paperSubtle,
+  },
+  addAnotherDashedBtnText: {
+    color: THEME.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Leg Card (Option 2 - Plan Trip)
+  legCard: {
+    backgroundColor: THEME.paper,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  legHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  legIndexBadge: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: THEME.primary,
+    letterSpacing: 0.8,
+  },
+  legRouteVisual: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: THEME.paperSubtle,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  legRouteVisualText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+
+  // Stay Plan Section
+  stayCard: {
+    backgroundColor: THEME.paper,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+  },
+  staySectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.primary,
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+
+  // Live Summary box
+  planSummaryCard: {
+    backgroundColor: THEME.bgAlt,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    padding: 10,
+    marginBottom: 14,
+  },
+  planSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  planSummaryLabel: {
+    fontSize: 11,
+    color: THEME.textSecondary,
+  },
+  planSummaryValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  planSummaryTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: THEME.border,
+    paddingTop: 6,
+    marginTop: 4,
+  },
+  planSummaryTotalLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  planSummaryTotalValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: THEME.primary,
+  },
+
+  // Success Feedback Banner
+  feedbackSuccessBanner: {
+    backgroundColor: THEME.greenBg,
+    borderColor: THEME.green,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 14,
+  },
+  feedbackSuccessText: {
+    color: THEME.green,
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 });

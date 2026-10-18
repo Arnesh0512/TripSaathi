@@ -13,6 +13,7 @@ client = MongoClient(
 
 db = client["tripsaathi"]
 user_collection = db["user"]
+trips_collection = db["trips"]
 
 if __name__ == "__main__":
     try:

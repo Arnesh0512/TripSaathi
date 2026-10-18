@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { styles } from '../styles/appStyles';
 
-export default function Header({ user, onOpenProfile, onFastSignIn }) {
+export default function Header({ user, onOpenProfile, onGoogleSignIn, onFastSignIn }) {
   return (
     <View style={styles.mobileHeader}>
       <View>
@@ -29,10 +29,16 @@ export default function Header({ user, onOpenProfile, onFastSignIn }) {
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={styles.headerDevBtn}
-          onPress={onFastSignIn}
+          style={styles.headerGoogleBtn}
+          onPress={onGoogleSignIn}
+          onLongPress={onFastSignIn}
+          activeOpacity={0.85}
         >
-          <Text style={styles.headerDevBtnText}>⚡ Sign In</Text>
+          <Image
+            source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+            style={styles.headerGoogleLogo}
+          />
+          <Text style={styles.headerGoogleBtnText}>Sign In</Text>
         </TouchableOpacity>
       )}
     </View>

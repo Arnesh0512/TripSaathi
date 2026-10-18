@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from routes import auth, user, travel
+from routes import auth, user, travel, trips
 
 # SSL certificate setup for MongoDB Atlas and external APIs
 os.environ["SSL_CERT_FILE"] = certifi.where()
@@ -37,6 +37,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(travel.router)
+app.include_router(trips.router)
 
 # Path to the Architecture PPT Slide
 SLIDE_PATH = CURRENT_DIR.parent.parent / "architecture_slide" / "index.html"
