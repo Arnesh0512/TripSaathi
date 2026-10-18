@@ -28,15 +28,6 @@ const TRANSPORT_MODES = [
   { id: 'bus', label: 'Bus', icon: '🚌', color: '#7C3AED' },
 ];
 
-const PRESETS = [
-  'Home (Dwarka)',
-  'DEL Airport (T3)',
-  'BOM Airport (T2)',
-  'New Delhi Rly Stn',
-  'Taj Lands End, Bandra',
-  'BKC Financial Centre',
-];
-
 export default function AddTripScreen({ token, onAddTripSuccess }) {
   // Option 1 vs Option 2 Mode
   const [activeMode, setActiveMode] = useState('UPLOAD_TICKETS'); // 'UPLOAD_TICKETS' | 'PLAN_TRIP'
@@ -150,66 +141,46 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
   // ----------------------------------------------------
   // Option 2 State: Plan Multi-Leg Chronological Trip
   // ----------------------------------------------------
-  const [plannedTripName, setPlannedTripName] = useState('Delhi to Mumbai Multi-Modal Tour');
-  const [planStartDate, setPlanStartDate] = useState('24 May 2025');
-  const [planPeopleCount, setPlanPeopleCount] = useState('2');
+  const [plannedTripName, setPlannedTripName] = useState('');
+  const [planStartDate, setPlanStartDate] = useState('');
+  const [planPeopleCount, setPlanPeopleCount] = useState('');
 
   const [legs, setLegs] = useState([
     {
       id: 1,
-      fromPoint: 'Home (Dwarka Sector 12)',
-      toPoint: 'Delhi Airport (T3)',
+      fromPoint: '',
+      toPoint: '',
       mode: 'cab',
-      departureTime: '11:30',
-      arrivalTime: '12:15',
-      estimatedBudget: '650',
-      notes: 'Pre-book Uber Premier',
-    },
-    {
-      id: 2,
-      fromPoint: 'DEL Airport (T3)',
-      toPoint: 'BOM Airport (T2)',
-      mode: 'airplane',
-      departureTime: '14:00',
-      arrivalTime: '16:15',
-      estimatedBudget: '5400',
-      notes: 'IndiGo / Air India non-stop',
-    },
-    {
-      id: 3,
-      fromPoint: 'BOM Airport (T2)',
-      toPoint: 'Taj Lands End, Bandra',
-      mode: 'cab',
-      departureTime: '16:45',
-      arrivalTime: '17:30',
-      estimatedBudget: '500',
-      notes: 'Airport prepaid cab counter',
+      departureTime: '',
+      arrivalTime: '',
+      estimatedBudget: '',
+      notes: '',
     },
   ]);
 
   const [stayPlan, setStayPlan] = useState({
-    cityOrHotel: 'Taj Lands End, Bandra',
-    daysCount: '3',
-    peopleCount: '2',
-    hotelBudget: '15000',
-    checkinDate: '24 May 2025',
-    checkoutDate: '27 May 2025',
+    cityOrHotel: '',
+    daysCount: '',
+    peopleCount: '',
+    hotelBudget: '',
+    checkinDate: '',
+    checkoutDate: '',
   });
 
   const handleAddLeg = () => {
     const lastLeg = legs[legs.length - 1];
-    const prevTo = lastLeg ? lastLeg.toPoint : 'Point B';
+    const prevTo = lastLeg ? lastLeg.toPoint : '';
     const nextId = legs.length + 1;
     setLegs([
       ...legs,
       {
         id: nextId,
         fromPoint: prevTo,
-        toPoint: `Point ${String.fromCharCode(65 + legs.length + 1)}`,
-        mode: 'cab',
-        departureTime: '18:00',
-        arrivalTime: '18:45',
-        estimatedBudget: '400',
+        toPoint: '',
+        mode: 'airplane',
+        departureTime: '',
+        arrivalTime: '',
+        estimatedBudget: '',
         notes: '',
       },
     ]);
@@ -568,6 +539,13 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
             >
               {legs.map((leg, idx) => {
                 const modeObj = TRANSPORT_MODES.find((m) => m.id === leg.mode) || TRANSPORT_MODES[0];
+                const fromLabel = leg.fromPoint?.trim()
+                  ? leg.fromPoint.split(' ')[0]
+                  : `Pt ${String.fromCharCode(65 + idx)}`;
+                const toLabel = leg.toPoint?.trim()
+                  ? leg.toPoint.split(' ')[0]
+                  : `Pt ${String.fromCharCode(66 + idx)}`;
+
                 return (
                   <React.Fragment key={`subway-${leg.id}`}>
                     {/* Node: Departure */}
@@ -578,9 +556,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         </Text>
                       </View>
                       <Text style={styles.routeNodeLabel} numberOfLines={1}>
-                        {leg.fromPoint.split(' ')[0] || `Pt ${String.fromCharCode(65 + idx)}`}
+                        {fromLabel}
                       </Text>
-                      <Text style={styles.routeNodeSub}>{leg.departureTime || 'Time'}</Text>
+                      <Text style={styles.routeNodeSub}>{leg.departureTime || '--:--'}</Text>
                     </View>
 
                     {/* Transit Connector Line with Mode Badge & Budget */}
@@ -588,7 +566,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                       <View style={styles.routeConnectorLine} />
                       <View style={styles.routeConnectorBadge}>
                         <Text style={styles.routeConnectorText}>
-                          {modeObj.icon} ₹{leg.estimatedBudget || '0'}
+                          {modeObj.icon} {leg.estimatedBudget ? `₹${leg.estimatedBudget}` : '—'}
                         </Text>
                       </View>
                     </View>
@@ -600,9 +578,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                           <Text style={styles.routeNodeIcon}>🏨</Text>
                         </View>
                         <Text style={styles.routeNodeLabel} numberOfLines={1}>
-                          {leg.toPoint.split(' ')[0] || `Pt ${String.fromCharCode(66 + idx)}`}
+                          {toLabel}
                         </Text>
-                        <Text style={styles.routeNodeSub}>{leg.arrivalTime || 'End'}</Text>
+                        <Text style={styles.routeNodeSub}>{leg.arrivalTime || '--:--'}</Text>
                       </View>
                     )}
                   </React.Fragment>
@@ -622,8 +600,8 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
               style={styles.tripBlueprintTitleInput}
               value={plannedTripName}
               onChangeText={setPlannedTripName}
-              placeholder="e.g. Delhi to Mumbai Business Tour"
-              placeholderTextColor={THEME.textMuted}
+              placeholder="Trip title (e.g. Delhi to Mumbai Tour)"
+              placeholderTextColor="#B0A89F"
             />
 
             <View style={styles.tripMetaPillRow}>
@@ -633,8 +611,8 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                   style={styles.tripMetaInput}
                   value={planStartDate}
                   onChangeText={setPlanStartDate}
-                  placeholder="Date"
-                  placeholderTextColor={THEME.textMuted}
+                  placeholder="Date (e.g. 24 May 2025)"
+                  placeholderTextColor="#B0A89F"
                 />
               </View>
               <View style={styles.tripMetaPill}>
@@ -643,9 +621,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                   style={styles.tripMetaInput}
                   value={planPeopleCount}
                   onChangeText={setPlanPeopleCount}
-                  placeholder="People"
+                  placeholder="2"
                   keyboardType="numeric"
-                  placeholderTextColor={THEME.textMuted}
+                  placeholderTextColor="#B0A89F"
                 />
                 <Text style={{ fontSize: 10, color: THEME.textMuted }}>travelers</Text>
               </View>
@@ -712,91 +690,76 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                   })}
                 </View>
 
-                {/* Boarding Pass Origin → Destination */}
+                {/* Boarding Pass Origin → Destination with Underlines */}
                 <View style={styles.legBoardingBody}>
-                  <View style={styles.boardingRouteDisplay}>
+                  <View style={styles.underlineRouteContainer}>
                     {/* Origin Box */}
-                    <View style={styles.boardingStationBox}>
-                      <Text style={styles.boardingStationKicker}>
+                    <View style={styles.underlineStationCol}>
+                      <Text style={styles.underlineKicker}>
                         DEPARTURE (PT {String.fromCharCode(65 + idx)})
                       </Text>
                       <TextInput
-                        style={styles.boardingStationInput}
+                        style={styles.stationUnderlineInput}
                         value={leg.fromPoint}
                         onChangeText={(val) => handleUpdateLeg(leg.id, 'fromPoint', val)}
-                        placeholder="Origin"
-                        placeholderTextColor={THEME.textMuted}
+                        placeholder="Type departure location"
+                        placeholderTextColor="#B0A89F"
                       />
+                      <View style={styles.timeUnderlineRow}>
+                        <Text style={styles.timeIconPrefix}>🕒</Text>
+                        <TextInput
+                          style={styles.timeUnderlineInput}
+                          value={leg.departureTime}
+                          onChangeText={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
+                          placeholder="Time (e.g. 11:30)"
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
                     </View>
 
                     {/* Directional Midway Arrow */}
-                    <View style={styles.boardingMidwayGraphic}>
-                      <Text style={styles.boardingMidwayIcon}>{currentMode.icon}</Text>
-                      <View style={styles.boardingMidwayLine} />
+                    <View style={styles.underlineMidwayBox}>
+                      <Text style={styles.underlineMidwayIcon}>{currentMode.icon}</Text>
+                      <View style={styles.underlineMidwayLine} />
                     </View>
 
                     {/* Destination Box */}
-                    <View style={[styles.boardingStationBox, { alignItems: 'flex-end' }]}>
-                      <Text style={styles.boardingStationKicker}>
+                    <View style={[styles.underlineStationCol, { alignItems: 'flex-end' }]}>
+                      <Text style={styles.underlineKicker}>
                         ARRIVAL (PT {String.fromCharCode(66 + idx)})
                       </Text>
                       <TextInput
-                        style={[styles.boardingStationInput, { textAlign: 'right' }]}
+                        style={[styles.stationUnderlineInput, { textAlign: 'right' }]}
                         value={leg.toPoint}
                         onChangeText={(val) => handleUpdateLeg(leg.id, 'toPoint', val)}
-                        placeholder="Destination"
-                        placeholderTextColor={THEME.textMuted}
+                        placeholder="Type arrival location"
+                        placeholderTextColor="#B0A89F"
                       />
+                      <View style={[styles.timeUnderlineRow, { justifyContent: 'flex-end' }]}>
+                        <Text style={styles.timeIconPrefix}>🕒</Text>
+                        <TextInput
+                          style={[styles.timeUnderlineInput, { textAlign: 'right' }]}
+                          value={leg.arrivalTime}
+                          onChangeText={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
+                          placeholder="Time (e.g. 12:15)"
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
                     </View>
                   </View>
 
-                  {/* 1-Tap Quick Station Presets */}
-                  <View style={styles.quickPresetRow}>
-                    {PRESETS.map((p) => (
-                      <TouchableOpacity
-                        key={p}
-                        style={styles.quickPresetChip}
-                        onPress={() => handleUpdateLeg(leg.id, 'toPoint', p)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.quickPresetChipText}>+ {p}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  {/* Timing & Budget Strip */}
-                  <View style={styles.legMetricsStrip}>
-                    <View style={styles.legMetricCard}>
-                      <Text style={styles.legMetricLabel}>DEPART</Text>
+                  {/* Budget Underline Strip */}
+                  <View style={styles.underlineBudgetRow}>
+                    <Text style={styles.underlineKicker}>ESTIMATED BUDGET</Text>
+                    <View style={styles.underlineBudgetBox}>
+                      <Text style={styles.underlineRupeeSign}>₹</Text>
                       <TextInput
-                        style={styles.legMetricInput}
-                        value={leg.departureTime}
-                        onChangeText={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
-                        placeholder="14:00"
-                        placeholderTextColor={THEME.textMuted}
-                      />
-                    </View>
-
-                    <View style={styles.legMetricCard}>
-                      <Text style={styles.legMetricLabel}>ARRIVE</Text>
-                      <TextInput
-                        style={styles.legMetricInput}
-                        value={leg.arrivalTime}
-                        onChangeText={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
-                        placeholder="16:15"
-                        placeholderTextColor={THEME.textMuted}
-                      />
-                    </View>
-
-                    <View style={styles.legMetricCard}>
-                      <Text style={styles.legMetricLabel}>BUDGET (₹)</Text>
-                      <TextInput
-                        style={styles.legMetricInput}
+                        style={styles.budgetUnderlineInput}
                         value={leg.estimatedBudget}
                         onChangeText={(val) => handleUpdateLeg(leg.id, 'estimatedBudget', val)}
-                        placeholder="5000"
+                        placeholder="0"
                         keyboardType="numeric"
-                        placeholderTextColor={THEME.textMuted}
+                        placeholderTextColor="#B0A89F"
                       />
                     </View>
                   </View>
@@ -812,7 +775,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
             activeOpacity={0.8}
           >
             <Text style={styles.smartAddLegPrompt}>
-              Next connection departs from: 📍 {legs[legs.length - 1]?.toPoint || 'Last Stop'}
+              {legs[legs.length - 1]?.toPoint
+                ? `Next connection departs from: 📍 ${legs[legs.length - 1].toPoint}`
+                : `Add another connection to your journey`}
             </Text>
             <Text style={styles.smartAddLegBtnText}>
               + Add Connection (Point {String.fromCharCode(65 + legs.length)} → Point {String.fromCharCode(66 + legs.length)})
@@ -832,11 +797,11 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
               <View style={styles.hotelNameInputBox}>
                 <Text style={styles.inputSmallLabel}>HOTEL / DESTINATION VENUE</Text>
                 <TextInput
-                  style={styles.cleanTextInput}
+                  style={styles.stationUnderlineInput}
                   value={stayPlan.cityOrHotel}
                   onChangeText={(val) => setStayPlan({ ...stayPlan, cityOrHotel: val })}
-                  placeholder="e.g. Taj Lands End, Bandra West"
-                  placeholderTextColor={THEME.textMuted}
+                  placeholder="Enter hotel name or city"
+                  placeholderTextColor="#B0A89F"
                 />
               </View>
 
@@ -847,36 +812,33 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                     style={styles.hotelMetricTileVal}
                     value={stayPlan.daysCount}
                     onChangeText={(val) => setStayPlan({ ...stayPlan, daysCount: val })}
-                    placeholder="3"
+                    placeholder="Nights (e.g. 3)"
                     keyboardType="numeric"
-                    placeholderTextColor={THEME.textMuted}
+                    placeholderTextColor="#B0A89F"
                   />
-                  <Text style={{ fontSize: 9, color: THEME.textMuted }}>Nights</Text>
                 </View>
 
                 <View style={styles.hotelMetricTile}>
-                  <Text style={styles.hotelMetricTileLabel}>STAY BUDGET</Text>
+                  <Text style={styles.hotelMetricTileLabel}>STAY BUDGET (₹)</Text>
                   <TextInput
                     style={styles.hotelMetricTileVal}
                     value={stayPlan.hotelBudget}
                     onChangeText={(val) => setStayPlan({ ...stayPlan, hotelBudget: val })}
-                    placeholder="15000"
+                    placeholder="0"
                     keyboardType="numeric"
-                    placeholderTextColor={THEME.textMuted}
+                    placeholderTextColor="#B0A89F"
                   />
-                  <Text style={{ fontSize: 9, color: THEME.textMuted }}>₹ INR</Text>
                 </View>
 
                 <View style={styles.hotelMetricTile}>
-                  <Text style={styles.hotelMetricTileLabel}>CHECK-IN</Text>
+                  <Text style={styles.hotelMetricTileLabel}>CHECK-IN DATE</Text>
                   <TextInput
                     style={styles.hotelMetricTileVal}
                     value={stayPlan.checkinDate}
                     onChangeText={(val) => setStayPlan({ ...stayPlan, checkinDate: val })}
-                    placeholder="24 May"
-                    placeholderTextColor={THEME.textMuted}
+                    placeholder="e.g. 24 May"
+                    placeholderTextColor="#B0A89F"
                   />
-                  <Text style={{ fontSize: 9, color: THEME.textMuted }}>Date</Text>
                 </View>
               </View>
 
@@ -890,6 +852,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
               </View>
             </View>
           </View>
+
 
           {/* 6. INTERACTIVE HUD / BUDGET PROGRESS VISUALIZER */}
           <View style={styles.journeyHudCard}>

@@ -1451,101 +1451,106 @@ export const styles = StyleSheet.create({
     color: THEME.primary,
   },
 
-  // Visual Route Section (Boarding Pass Layout)
+  // Underline-based Route & Stations (Replaces input box graphics)
   legBoardingBody: {
-    padding: 12,
+    padding: 14,
   },
-  boardingRouteDisplay: {
+  underlineRouteContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    marginBottom: 12,
+  },
+  underlineStationCol: {
+    flex: 1,
+  },
+  underlineKicker: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: THEME.primary,
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  stationUnderlineInput: {
+    width: '100%',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#C4BCB3',
+    backgroundColor: 'transparent',
+    paddingVertical: 5,
+    paddingHorizontal: 0,
+    fontSize: 13,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 8,
+  },
+  timeUnderlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    width: '100%',
+  },
+  timeIconPrefix: {
+    fontSize: 10,
+    color: THEME.textMuted,
+  },
+  timeUnderlineInput: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DDD6CC',
+    backgroundColor: 'transparent',
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    fontSize: 11,
+    color: THEME.textSecondary,
+    fontWeight: '500',
+  },
+  underlineMidwayBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingTop: 18,
+  },
+  underlineMidwayIcon: {
+    fontSize: 17,
+    marginBottom: 2,
+  },
+  underlineMidwayLine: {
+    width: 34,
+    height: 1.5,
+    backgroundColor: THEME.primary,
+  },
+  underlineBudgetRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#ECE6DC',
+    paddingTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
-    backgroundColor: THEME.paperSubtle,
-    borderRadius: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: THEME.border,
   },
-  boardingStationBox: {
-    flex: 1,
+  underlineBudgetBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#C4BCB3',
+    minWidth: 110,
+    paddingVertical: 2,
   },
-  boardingStationKicker: {
-    fontSize: 8,
+  underlineRupeeSign: {
+    fontSize: 13,
     fontWeight: '800',
     color: THEME.primary,
-    letterSpacing: 0.6,
-    marginBottom: 2,
+    marginRight: 4,
   },
-  boardingStationInput: {
+  budgetUnderlineInput: {
+    flex: 1,
     fontSize: 12,
     fontWeight: '700',
     color: THEME.text,
     padding: 0,
-  },
-  boardingMidwayGraphic: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  boardingMidwayIcon: {
-    fontSize: 15,
-    marginBottom: 2,
-  },
-  boardingMidwayLine: {
-    width: 38,
-    height: 1.5,
-    backgroundColor: THEME.primary,
+    backgroundColor: 'transparent',
   },
 
-  // Quick Preset Chips
-  quickPresetRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 5,
-    marginBottom: 10,
-  },
-  quickPresetChip: {
-    backgroundColor: THEME.bgAlt,
-    borderWidth: 1,
-    borderColor: THEME.borderDark,
-    borderRadius: 12,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  quickPresetChipText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: THEME.textSecondary,
-  },
-
-  // Timing & Budget Mini Strip
-  legMetricsStrip: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 2,
-  },
-  legMetricCard: {
-    flex: 1,
-    backgroundColor: THEME.paperSubtle,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  legMetricLabel: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: THEME.textMuted,
-    letterSpacing: 0.4,
-    marginBottom: 2,
-  },
-  legMetricInput: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: THEME.text,
-    padding: 0,
-  },
 
   // Smart Next Leg Banner
   smartAddLegCard: {
@@ -1624,24 +1629,25 @@ export const styles = StyleSheet.create({
   },
   hotelMetricTile: {
     flex: 1,
-    backgroundColor: THEME.paperSubtle,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#C4BCB3',
+    backgroundColor: 'transparent',
   },
   hotelMetricTileLabel: {
     fontSize: 8,
     fontWeight: '700',
-    color: THEME.textMuted,
+    color: THEME.primary,
     marginBottom: 2,
+    letterSpacing: 0.5,
   },
   hotelMetricTileVal: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: THEME.text,
     padding: 0,
+    backgroundColor: 'transparent',
   },
   hotelPerksRow: {
     flexDirection: 'row',
