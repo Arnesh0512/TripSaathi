@@ -6,6 +6,7 @@
     "@expo/metro-runtime": "~57.0.17",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "expo": "~57.0.30",
+    "expo-dev-client": "~57.0.20",
     "expo-linking": "~57.0.13",
     "expo-status-bar": "~57.0.1",
     "expo-web-browser": "~57.0.3",
