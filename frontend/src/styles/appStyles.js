@@ -1742,6 +1742,29 @@ export const styles = StyleSheet.create({
     padding: 0,
     backgroundColor: 'transparent',
   },
+  underlinePreferredServiceRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#ECE6DC',
+    paddingTop: 10,
+    marginTop: 10,
+  },
+  underlinePreferredServiceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  preferredServiceBadge: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.primary,
+    backgroundColor: THEME.primaryLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: THEME.primaryBorder,
+  },
 
 
   // Smart Next Leg Banner

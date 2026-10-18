@@ -243,6 +243,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
       departureTime: '',
       arrivalTime: '',
       estimatedBudget: '',
+      preferredServiceUrl: '',
       notes: '',
     },
   ]);
@@ -254,6 +255,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
     hotelBudget: '',
     checkinDate: '',
     checkoutDate: '',
+    preferredServiceUrl: '',
   });
 
   const handleAddLeg = () => {
@@ -270,6 +272,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
         departureTime: '',
         arrivalTime: '',
         estimatedBudget: '',
+        preferredServiceUrl: '',
         notes: '',
       },
     ]);
@@ -312,6 +315,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
           departure_time: leg.departureTime,
           arrival_time: leg.arrivalTime,
           estimated_budget: parseFloat(leg.estimatedBudget) || 0.0,
+          preferred_service_url: leg.preferredServiceUrl ? leg.preferredServiceUrl.trim() : '',
           notes: leg.notes,
         })),
         stay_plan: {
@@ -321,6 +325,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
           hotel_budget: parseFloat(stayPlan.hotelBudget) || 0.0,
           checkin_date: stayPlan.checkinDate,
           checkout_date: stayPlan.checkoutDate,
+          preferred_service_url: stayPlan.preferredServiceUrl ? stayPlan.preferredServiceUrl.trim() : '',
         },
         notes: `Chronological ${legs.length}-leg itinerary with stay in ${stayPlan.cityOrHotel}`,
       };
@@ -1127,6 +1132,37 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                       />
                     </View>
                   </View>
+
+                  {/* Preferred Service / Booking Website Link Strip (Optional) */}
+                  <View style={styles.underlinePreferredServiceRow}>
+                    <View style={styles.underlinePreferredServiceHeader}>
+                      <Text style={styles.underlineKicker}>
+                        🔗 PREFERRED {currentMode.label.toUpperCase()} SERVICE / LINK (OPTIONAL)
+                      </Text>
+                      {leg.preferredServiceUrl?.trim().length > 0 && (
+                        <Text style={styles.preferredServiceBadge}>Custom Provider</Text>
+                      )}
+                    </View>
+                    <TextInput
+                      style={styles.stationUnderlineInput}
+                      value={leg.preferredServiceUrl}
+                      onChangeText={(val) => handleUpdateLeg(leg.id, 'preferredServiceUrl', val)}
+                      placeholder={ph(
+                        currentMode.id === 'airplane'
+                          ? 'e.g. https://www.airindia.com or makemytrip.com'
+                          : currentMode.id === 'train'
+                          ? 'e.g. https://www.irctc.co.in or confirmtkt.com'
+                          : currentMode.id === 'cab'
+                          ? 'e.g. https://www.uber.com or ola.com'
+                          : currentMode.id === 'bus'
+                          ? 'e.g. https://www.redbus.in or zingbus.com'
+                          : 'e.g. Website link you prefer to book with'
+                      )}
+                      placeholderTextColor="#B0A89F"
+                      autoCapitalize="none"
+                      keyboardType="url"
+                    />
+                  </View>
                 </View>
               </View>
             );
@@ -1203,6 +1239,27 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                     placeholder={ph('Check-in date')}
                   />
                 </View>
+              </View>
+
+              {/* Preferred Hotel Booking Link Strip (Optional) */}
+              <View style={[styles.underlinePreferredServiceRow, { marginTop: 14 }]}>
+                <View style={styles.underlinePreferredServiceHeader}>
+                  <Text style={styles.inputSmallLabel}>
+                    🔗 PREFERRED HOTEL / STAY BOOKING LINK (OPTIONAL)
+                  </Text>
+                  {stayPlan.preferredServiceUrl?.trim().length > 0 && (
+                    <Text style={styles.preferredServiceBadge}>Custom Provider</Text>
+                  )}
+                </View>
+                <TextInput
+                  style={styles.stationUnderlineInput}
+                  value={stayPlan.preferredServiceUrl}
+                  onChangeText={(val) => setStayPlan({ ...stayPlan, preferredServiceUrl: val })}
+                  placeholder={ph('e.g. https://www.booking.com, agoda.com, or hotel website')}
+                  placeholderTextColor="#B0A89F"
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
               </View>
 
               <View style={styles.hotelPerksRow}>

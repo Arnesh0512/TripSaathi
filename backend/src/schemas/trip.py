@@ -26,6 +26,7 @@ class TripLegItem(BaseModel):
     departure_time: Optional[str] = ""
     arrival_time: Optional[str] = ""
     estimated_budget: Optional[float] = 0.0
+    preferred_service_url: Optional[str] = ""
     notes: Optional[str] = ""
 
 class StayPlanItem(BaseModel):
@@ -35,6 +36,7 @@ class StayPlanItem(BaseModel):
     hotel_budget: Optional[float] = 0.0
     checkin_date: Optional[str] = ""
     checkout_date: Optional[str] = ""
+    preferred_service_url: Optional[str] = ""
     notes: Optional[str] = ""
 
 class PlanTripCreate(BaseModel):
