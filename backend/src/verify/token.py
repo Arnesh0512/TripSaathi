@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from jose import jwt, JWTError
-from utils.reader import GOOGLE_CLIENT_ID, JWT_SECRET, JWT_ALGO
+from utils.reader import GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID, JWT_SECRET, JWT_ALGO
 
 def verify_google_token(data: dict | None) -> dict:
     if not isinstance(data, dict):
@@ -20,11 +20,21 @@ def verify_google_token(data: dict | None) -> dict:
             "picture": "https://lh3.googleusercontent.com/a/default-user"
         }
 
+    # Support either Web Client ID or Android Client ID as valid audiences
+    allowed_audiences = [cid for cid in [GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID] if cid]
+    if not allowed_audiences:
+        raise HTTPException(
+            status_code=500,
+            detail="Server configuration error: GOOGLE_CLIENT_ID is not configured"
+        )
+
+    audience = allowed_audiences[0] if len(allowed_audiences) == 1 else allowed_audiences
+
     try:
         idinfo = id_token.verify_oauth2_token(
             token,
             requests.Request(),
-            GOOGLE_CLIENT_ID
+            audience=audience
         )
         return idinfo
     except Exception as e:

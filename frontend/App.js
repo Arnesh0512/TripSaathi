@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-
-import { GOOGLE_CLIENT_ID } from './src/constants/theme';
 import { authApi, userApi } from './src/services/api';
+import {
+  configureGoogleSignIn,
+  initWebGoogleSignIn,
+  signInWithGoogle,
+  signOutFromGoogle,
+} from './src/services/googleAuth';
 import { styles } from './src/styles/appStyles';
 
 import Header from './src/components/Header';
@@ -27,8 +29,6 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import ImpactScreen from './src/screens/ImpactScreen';
 import RecoveryScreen from './src/screens/RecoveryScreen';
 import TrackerScreen from './src/screens/TrackerScreen';
-
-WebBrowser.maybeCompleteAuthSession();
 
 export default function App() {
   const { width: windowWidth } = useWindowDimensions();
@@ -51,81 +51,45 @@ export default function App() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
 
-  // Google Auth for Native Mobile (iOS/Android in Expo Go via redirect URL)
-  const handleMobileGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      const expoProxyRedirect = 'https://auth.expo.io/@arnesh512/TripSaathi';
-      const returnUrl = Linking.createURL('auth');
-
-      const googleAuthUrl =
-        `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${GOOGLE_CLIENT_ID}&` +
-        `response_type=id_token&` +
-        `redirect_uri=${encodeURIComponent(expoProxyRedirect)}&` +
-        `scope=${encodeURIComponent('openid profile email')}&` +
-        `nonce=${Math.random().toString(36).substring(2)}`;
-
-      const proxyStartUrl = `https://auth.expo.io/@arnesh512/TripSaathi/start?authUrl=${encodeURIComponent(
-        googleAuthUrl
-      )}&returnUrl=${encodeURIComponent(returnUrl)}`;
-
-      const result = await WebBrowser.openAuthSessionAsync(proxyStartUrl, returnUrl);
-      if (result.type === 'success' && result.url) {
-        const match = result.url.match(/id_token=([^&]+)/);
-        if (match && match[1]) {
-          await exchangeGoogleTokenWithBackend(match[1]);
-          return;
-        }
-      }
-    } catch (err) {
-      alertError('Google Sign In error: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initialize Google Identity Services for Web
+  // Initialize Google Sign-In per platform
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const scriptId = 'google-gsi-script';
-      if (!document.getElementById(scriptId)) {
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.async = true;
-        script.defer = true;
-        script.onload = () => initGoogleWebButton();
-        document.body.appendChild(script);
-      } else {
-        initGoogleWebButton();
-      }
+    if (Platform.OS === 'web' && !token) {
+      initWebGoogleSignIn(
+        async (result) => {
+          if (result?.idToken) {
+            await exchangeGoogleTokenWithBackend(result.idToken);
+          }
+        },
+        (errMsg) => {
+          alertError(errMsg);
+        }
+      );
+    } else if (Platform.OS !== 'web') {
+      configureGoogleSignIn();
     }
   }, [token]);
 
-  const initGoogleWebButton = () => {
-    if (window.google && window.google.accounts && !token) {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredentialResponse,
-      });
-      const btnParent = document.getElementById('googleSignInBtn');
-      if (btnParent) {
-        btnParent.innerHTML = '';
-        window.google.accounts.id.renderButton(btnParent, {
-          theme: 'outline',
-          size: 'large',
-          text: 'signin_with',
-          shape: 'rectangular',
-          width: 260,
-        });
+  // Native Google Sign-In for Standalone Android / iOS
+  const handleMobileGoogleLogin = async () => {
+    if (loading) return; // Prevent duplicate sign-in requests
+    try {
+      setLoading(true);
+      const result = await signInWithGoogle();
+      if (result.cancelled || result.inProgress) {
+        return;
       }
+      if (result.error) {
+        alertError(result.error);
+        return;
+      }
+      if (result.idToken) {
+        await exchangeGoogleTokenWithBackend(result.idToken);
+      }
+    } catch (err) {
+      alertError('Google Sign In error: ' + (err?.message || err));
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleGoogleCredentialResponse = async (response) => {
-    if (!response || !response.credential) return;
-    await exchangeGoogleTokenWithBackend(response.credential);
   };
 
   const exchangeGoogleTokenWithBackend = async (googleJwt) => {
@@ -212,7 +176,12 @@ export default function App() {
     }
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await signOutFromGoogle();
+    } catch (e) {
+      console.warn('Sign out error:', e);
+    }
     setToken(null);
     setUser(null);
     setProfileModalVisible(false);
