@@ -262,7 +262,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
             departureTime: '19 Oct 2026, 17:00',
             arrivalTime: '19 Oct 2026, 23:00',
             estimatedBudget: '20,000',
-            preferredServiceUrl: 'https://demo-arilines.vercel.app/',
+            preferredServiceUrl: 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa',
             notes: '',
           },
         ]
@@ -317,7 +317,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
           departureTime: '19 Oct 2026, 17:00',
           arrivalTime: '19 Oct 2026, 23:00',
           estimatedBudget: '20,000',
-          preferredServiceUrl: 'https://demo-arilines.vercel.app/',
+          preferredServiceUrl: 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa',
           notes: '',
         },
       ]);
@@ -457,40 +457,28 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
   };
 
   const getLegAutofillUrl = (leg) => {
+    if (leg.mode === 'airplane') {
+      return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+    }
+    if (isArnesh && (leg.mode === 'airplane' || !leg.mode)) {
+      return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+    }
     if (leg.preferredServiceUrl && leg.preferredServiceUrl.trim().length > 0) {
+      if (leg.preferredServiceUrl.includes('demo-arilines.vercel.app')) {
+        return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+      }
       return leg.preferredServiceUrl.trim();
     }
     const cleanFrom = (leg.fromPoint || '').toLowerCase();
     const cleanTo = (leg.toPoint || '').toLowerCase();
 
-    const getCode = (str, defaultCode) => {
-      if (str.includes('del') || str.includes('delhi')) return 'DEL';
-      if (str.includes('bom') || str.includes('mumbai') || str.includes('bombay')) return 'BOM';
-      if (str.includes('blr') || str.includes('bangalore') || str.includes('bengaluru')) return 'BLR';
-      if (str.includes('goa') || str.includes('goi')) return 'GOI';
-      if (str.includes('hyd') || str.includes('hyderabad')) return 'HYD';
-      if (str.includes('maa') || str.includes('chennai')) return 'MAA';
-      return defaultCode;
-    };
-
-    const origin = getCode(cleanFrom, 'DEL');
-    const dest = getCode(cleanTo, 'BOM');
-    const travelDate = planStartDate ? planStartDate.split(' ')[0] : '2026-10-18';
-    const pax = planPeopleCount || '1';
-
-    if (isArnesh && leg.mode === 'airplane') {
-      return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
-    }
-    if (leg.mode === 'airplane') {
-      return `https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa?flight_id=SP-952&origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
-    }
     if (leg.mode === 'cab') {
       return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(leg.fromPoint || 'Delhi')}&destination=${encodeURIComponent(leg.toPoint || 'Airport')}`;
     }
     if (leg.mode === 'train') {
       return `https://www.irctc.co.in/nget/train-search`;
     }
-    return `https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa?flight_id=SP-952&origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
+    return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
   };
 
   const getHotelAutofillUrl = () => {
