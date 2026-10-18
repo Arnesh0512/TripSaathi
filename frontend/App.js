@@ -22,25 +22,25 @@ WebBrowser.maybeCompleteAuthSession();
 
 const DEV_MACHINE_IP = '192.168.1.11';
 const LOCAL_BACKEND_URL = Platform.OS === 'web' ? 'http://localhost:7000' : `http://${DEV_MACHINE_IP}:7000`;
-// Railway deployed backend URL (can be customized or passed via EXPO_PUBLIC_BACKEND_URL)
-const RAILWAY_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://tripsaathi-production.up.railway.app';
+// Primary live backend deployed on Railway
+const PRIMARY_BACKEND_URL = 'https://tripsaathi-production.up.railway.app';
 
-// Helper: Call Railway first; if unreachable, automatically falls back to Localhost / LAN
-async function callBackend(endpoint, options = {}, timeoutMs = 4000) {
-  if (RAILWAY_BACKEND_URL && !RAILWAY_BACKEND_URL.includes('your-railway-app')) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      const res = await fetch(`${RAILWAY_BACKEND_URL}${endpoint}`, {
-        ...options,
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      return res;
-    } catch (e) {
-      console.warn(`[TripSaathi] Railway backend unavailable. Falling back to local backend: ${LOCAL_BACKEND_URL}`);
-    }
+// Helper: Call Railway primary backend first; if unavailable, automatically fall back to Localhost / LAN
+async function callBackend(endpoint, options = {}, timeoutMs = 4500) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(`${PRIMARY_BACKEND_URL}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    return res;
+  } catch (e) {
+    console.warn(`[TripSaathi] Primary Railway backend (${PRIMARY_BACKEND_URL}) unavailable. Falling back to local backend (${LOCAL_BACKEND_URL}). Error: ${e.message}`);
   }
+
+  // Fallback to local server
   return await fetch(`${LOCAL_BACKEND_URL}${endpoint}`, options);
 }
 
