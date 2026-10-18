@@ -51,42 +51,38 @@ doc = {
         "hero_description": "AirIndia SP-952 (DEL → BOM): Touchdown pushed from 23:00 to 01:15.",
         "cascading_steps": [
             {
-                "icon": "🛫",
-                "title": "Flight Departure (DEL T5)",
-                "desc": "Scheduled 17:00 → Revised 19:15 (+2h 15m)",
+                "title": "Flight SP-952 Departure (DEL T5)",
+                "desc": "Scheduled 17:00 → Revised 19:15",
                 "is_alert": True
             },
             {
-                "icon": "🛬",
-                "title": "Mumbai Landing (BOM T6)",
-                "desc": "Delayed landing at 01:15 • Bags: 01:40",
+                "title": "Touchdown & Arrival (BOM T6)",
+                "desc": "Revised 01:15 • Luggage retrieval: 01:40",
                 "is_alert": False
             },
             {
-                "icon": "🚕",
-                "title": "Airport Cab Chauffeur",
-                "desc": "Pickup rescheduled from 23:30 to 01:45",
+                "title": "Airport Chauffeur Transfer",
+                "desc": "Pickup re-timed to 01:45 at Terminal 6",
                 "is_alert": True
             },
             {
-                "icon": "🏨",
-                "title": "StayPulse Deluxe Room Check-in",
-                "desc": "Expected 02:00. Room held past midnight via StayPulse.",
+                "title": "StayPulse Room Check-in",
+                "desc": "Expected 02:00 • Covered under late hold policy",
                 "is_alert": True
             }
         ],
         "financial_risk": "₹12,506 room reservation protected with automated hold."
     },
     "recovery": {
-        "protected_amount": "₹12,506",
+        "protected_amount": "₹12,506 (StayPulse 2 Nights)",
         "penalty_amount": "₹0 Penalty",
         "hotel_policy": {
-            "title": "STAYPULSE POLICY (DELUXE AIRPORT VIEW ROOM)",
-            "text": "Direct slot policy: Late arrival notice extends check-in hold until 04:00 with ₹0 penalty."
+            "title": "StayPulse Direct Hold Policy",
+            "text": "Late arrivals notified before midnight receive guaranteed room hold until 04:00 with zero penalty."
         },
         "airline_policy": {
-            "title": "AIRLINE POLICY (AIRINDIA SP-952)",
-            "text": "DGCA Charter: 2h+ delay entitles passenger to meal vouchers at DEL T5 and free rescheduling."
+            "title": "AirIndia DGCA Delay Charter",
+            "text": "DGCA 2h+ delay entitles passengers to terminal refreshments and priority rescheduling."
         },
         "todos": [
             {
@@ -126,4 +122,4 @@ result = disruptions_collection.update_one(
     {"$set": doc},
     upsert=True
 )
-print("Updated MongoDB disruptions. Matched:", result.matched_count, "Modified:", result.modified_count, "UpsertedId:", result.upserted_id)
+print("Updated MongoDB disruptions. Matched:", result.matched_count, "Modified:", result.modified_count)

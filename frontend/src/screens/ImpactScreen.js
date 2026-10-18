@@ -19,37 +19,36 @@ export default function ImpactScreen({
           <Text style={styles.screenTitleSerif}>Impact Analysis</Text>
           <View
             style={{
-              backgroundColor: isArneshWithDisruption ? '#FEF2F2' : '#ECFDF5',
+              backgroundColor: isArneshWithDisruption ? '#FBF6EE' : '#ECFDF5',
               paddingHorizontal: 8,
               paddingVertical: 2,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: isArneshWithDisruption ? '#FCA5A5' : '#A7F3D0',
+              borderColor: isArneshWithDisruption ? '#E8DFD1' : '#A7F3D0',
             }}
           >
             <Text
               style={{
                 fontSize: 9,
                 fontWeight: '800',
-                color: isArneshWithDisruption ? '#DC2626' : '#047857',
+                color: isArneshWithDisruption ? '#8C3224' : '#047857',
               }}
             >
-              {isArneshWithDisruption ? 'ACTIVE DISRUPTION' : 'ALL ON SCHEDULE'}
+              {isArneshWithDisruption ? 'ITINERARY ADJUSTMENT' : 'ALL ON SCHEDULE'}
             </Text>
           </View>
         </View>
       </View>
       <Text style={styles.impactSubText}>
-        Downstream chain reaction & schedule lag across multi-leg itinerary
+        Downstream timeline adjustments for AirIndia SP-952 and StayPulse hotel
       </Text>
 
       {/* When NO disruption data in DB or user is not arnesh052006@gmail.com */}
       {!isArneshWithDisruption ? (
         <View style={styles.emptyStateCard}>
-          <Text style={styles.emptyStateIcon}>🛡️</Text>
           <Text style={styles.emptyStateTitle}>No Schedule Impact Detected</Text>
           <Text style={styles.emptyStateDesc}>
-            All flights, trains, and hotel check-in cut-offs are operating on schedule. If any delay is detected by TinyFish radar, downstream cascading impacts will appear here immediately.
+            All flight legs and hotel reservations are operating on schedule. Any schedule updates will reflect here.
           </Text>
           <TouchableOpacity
             style={[styles.primaryTerracottaBtn, { paddingVertical: 10, paddingHorizontal: 16 }]}
@@ -62,81 +61,93 @@ export default function ImpactScreen({
       ) : (
         /* When arnesh052006@gmail.com is signed in and has disruption stored in DB */
         <View>
-          {/* 1. HERO DELAY & SCHEDULE LAG CARD */}
-          <View style={styles.delayHeroCard}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <View>
-                <Text style={styles.delayHeroKicker}>FLIGHT DELAY DETECTED</Text>
-                <Text style={styles.delayHeroTime}>{disruption.delay_time || '+2h 15m'}</Text>
-              </View>
-              <View style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: '#DC2626' }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#DC2626' }}>
-                  {disruption.lag_minutes || '135 MIN LAG'}
-                </Text>
+          {/* CASCADING SCHEDULE TIMELINE */}
+          <Text style={styles.affectedHeading}>REVISED SCHEDULE TIMELINE</Text>
+
+          <View style={{ backgroundColor: '#FAF7F2', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#EAE3D7', marginBottom: 14, gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#A83827', marginTop: 5 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E1B18' }}>Flight SP-952 Departure (DEL T5)</Text>
+                <Text style={{ fontSize: 11, color: '#68697F', marginTop: 1 }}>Scheduled 17:00 → Revised 19:15</Text>
               </View>
             </View>
-            <Text style={styles.delayHeroLocation}>
-              {disruption.hero_description ||
-                'AirIndia SP-952 (DEL → BOM): Touchdown pushed from 23:00 to 01:15.'}
-            </Text>
-          </View>
 
-          {/* 2. CASCADING SCHEDULE TIMELINE FROM DB */}
-          <Text style={styles.affectedHeading}>CASCADING SCHEDULE IMPACT</Text>
-
-          <View style={{ backgroundColor: '#FAF7F2', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#EAE3D7', marginBottom: 14, gap: 10 }}>
-            {disruption.cascading_steps?.map((step, idx) => (
-              <View key={`step-${idx}`} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                <Text style={{ fontSize: 16 }}>{step.icon}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E1B18' }}>{step.title}</Text>
-                  <Text style={{ fontSize: 11, color: step.is_alert ? '#DC2626' : '#68697F', fontWeight: step.is_alert ? '600' : '400' }}>
-                    {step.desc}
-                  </Text>
-                </View>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#D97706', marginTop: 5 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E1B18' }}>Touchdown & Arrival (BOM T6)</Text>
+                <Text style={{ fontSize: 11, color: '#68697F', marginTop: 1 }}>Revised 01:15 • Luggage retrieval: 01:40</Text>
               </View>
-            ))}
-          </View>
-
-          {/* 3. DETAILED RISK ASSESSMENT */}
-          <Text style={styles.affectedHeading}>WHAT IS IN RISK?</Text>
-
-          {/* Hotel Risk */}
-          <View style={[styles.impactItemCard, { borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' }]}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '800', color: '#DC2626' }}>
-                  🏨 StayPulse Deluxe Airport View Room
-                </Text>
-              </View>
-              <Text style={{ fontSize: 11, color: '#7F1D1D', lineHeight: 16 }}>
-                Expected arrival 02:00 exceeds standard midnight cut-off. Room held under direct slot policy.
-              </Text>
             </View>
-            <Text style={[styles.badgeAmber, { backgroundColor: '#FEE2E2', color: '#DC2626', borderColor: '#F87171' }]}>
-              High Risk
-            </Text>
+
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#64748B', marginTop: 5 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E1B18' }}>Airport Chauffeur Transfer</Text>
+                <Text style={{ fontSize: 11, color: '#68697F', marginTop: 1 }}>Pickup re-timed to 01:45 at Terminal 6</Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#059669', marginTop: 5 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E1B18' }}>StayPulse Room Check-in</Text>
+                <Text style={{ fontSize: 11, color: '#68697F', marginTop: 1 }}>Expected 02:00 • Covered under late hold policy</Text>
+              </View>
+            </View>
           </View>
 
-          {/* Transit Transfer Risk */}
-          <View style={styles.impactItemCard}>
+          {/* CONNECTED RESERVATION STATUS */}
+          <Text style={styles.affectedHeading}>CONNECTED RESERVATIONS</Text>
+
+          {/* Hotel Impact */}
+          <View style={[styles.impactItemCard, { backgroundColor: '#FAF7F2', borderColor: '#EAE3D7' }]}>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.impactItemTitle}>🚗 Pre-Booked Airport Chauffeur</Text>
+              <Text style={styles.impactItemTitle}>StayPulse Deluxe Airport View Room</Text>
               <Text style={styles.impactItemSub}>
-                Pickup rescheduled to 01:45 to match revised AirIndia SP-952 landing at BOM T6.
+                Check-in revised to 02:00. Room held past midnight with zero cancellation penalty.
               </Text>
             </View>
-            <Text style={styles.badgeAmber}>Medium Risk</Text>
+            <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#FCD34D' }}>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: '#B45309' }}>Hold Protected</Text>
+            </View>
           </View>
 
-          {/* 4. PRIMARY ACTION BUTTON */}
+          {/* AirIndia Flight Impact */}
+          <View style={[styles.impactItemCard, { backgroundColor: '#FAF7F2', borderColor: '#EAE3D7' }]}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.impactItemTitle}>AirIndia SP-952 (DEL → BOM)</Text>
+              <Text style={styles.impactItemSub}>
+                Airspace delay +2h 15m. Departure at 19:15 with confirmed non-stop routing.
+              </Text>
+            </View>
+            <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#CBD5E1' }}>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: '#475569' }}>Revised 19:15</Text>
+            </View>
+          </View>
+
+          {/* Transit Transfer */}
+          <View style={[styles.impactItemCard, { backgroundColor: '#FAF7F2', borderColor: '#EAE3D7' }]}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.impactItemTitle}>Pre-Booked Airport Chauffeur</Text>
+              <Text style={styles.impactItemSub}>
+                Pickup window rescheduled to 01:45 to match Terminal 6 arrival.
+              </Text>
+            </View>
+            <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#A7F3D0' }}>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: '#047857' }}>Synchronized</Text>
+            </View>
+          </View>
+
+          {/* PRIMARY ACTION BUTTON */}
           <TouchableOpacity
             style={styles.primaryTerracottaBtn}
             onPress={onNavigateToRecovery}
             activeOpacity={0.85}
           >
             <Text style={styles.primaryTerracottaBtnText}>
-              ⚡ Proceed to Automated Recovery & Policies ›
+              Review Policy Protection & Actions ›
             </Text>
           </TouchableOpacity>
         </View>

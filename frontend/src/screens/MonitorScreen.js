@@ -40,7 +40,7 @@ export default function MonitorScreen({
       setLastCheckedTime('Just now');
       setSecondsToNextPing(300);
       if (onTriggerDelayAlert) onTriggerDelayAlert(true);
-    }, 1500);
+    }, 10000);
   };
 
   const formatCountdown = (secs) => {
@@ -140,7 +140,10 @@ export default function MonitorScreen({
                 activeOpacity={0.8}
               >
                 {checking ? (
-                  <ActivityIndicator color="#fff" size="small" style={{ paddingHorizontal: 12 }} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 6 }}>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={[styles.monitorPingBtnText, { fontSize: 11 }]}>Scanning...</Text>
+                  </View>
                 ) : (
                   <Text style={styles.monitorPingBtnText}>Check Now</Text>
                 )}

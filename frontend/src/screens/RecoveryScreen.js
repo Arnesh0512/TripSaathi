@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { styles } from '../styles/appStyles';
 import { tripApi } from '../services/api';
 
@@ -73,16 +73,15 @@ export default function RecoveryScreen({
         </View>
       </View>
       <Text style={styles.impactSubText}>
-        Scraped policy intelligence, financial protection & action checklist
+        Carrier policies, room guarantee, and automated recovery actions
       </Text>
 
       {/* When NO disruption data in DB or user is not arnesh052006@gmail.com */}
       {!isArneshWithDisruption ? (
         <View style={styles.emptyStateCard}>
-          <Text style={styles.emptyStateIcon}>💡</Text>
-          <Text style={styles.emptyStateTitle}>No Recovery Actions Needed</Text>
+          <Text style={styles.emptyStateTitle}>No Recovery Actions Required</Text>
           <Text style={styles.emptyStateDesc}>
-            All bookings and transit connections are intact with zero delay penalties. Scraped hotel & airline policies, claim vouchers, and recovery tasks will appear here if a disruption occurs.
+            All reservations and airport transfers are intact with zero delay penalties.
           </Text>
           <TouchableOpacity
             style={[styles.primaryTerracottaBtn, { paddingVertical: 10, paddingHorizontal: 16 }]}
@@ -100,7 +99,7 @@ export default function RecoveryScreen({
             <View>
               <Text style={styles.recoveryStatLabel}>TOTAL BOOKING VALUE PROTECTED</Text>
               <Text style={styles.recoveryStatAmount}>
-                {disruption.protected_amount || '₹12,506 • 100% RECOVERED'}
+                {disruption.protected_amount || '₹12,506 (StayPulse 2 Nights)'}
               </Text>
             </View>
             <View style={{ backgroundColor: '#D1FAE5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
@@ -110,17 +109,17 @@ export default function RecoveryScreen({
             </View>
           </View>
 
-          {/* 2. SCRAPED POLICY INTELLIGENCE (TinyFish Web Scraped) */}
-          <Text style={styles.affectedHeading}>SCRAPED CANCELLATION & POSTPONEMENT POLICIES</Text>
+          {/* 2. SCRAPED POLICY INTELLIGENCE */}
+          <Text style={styles.affectedHeading}>APPLICABLE CANCELLATION & DELAY POLICIES</Text>
 
           {/* StayPulse Hotel Policy */}
           {disruption.hotel_policy && (
             <View style={styles.policySectionBox}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.policySectionTitle}>
-                  {disruption.hotel_policy.title || '🏨 StayPulse Policy (stay-pulse.vercel.app)'}
+                  {disruption.hotel_policy.title || 'StayPulse Direct Hold Policy'}
                 </Text>
-                <Text style={{ fontSize: 9, fontWeight: '700', color: '#0284C7' }}>TINYFISH SCRAPED</Text>
+                <Text style={{ fontSize: 9, fontWeight: '700', color: '#0284C7' }}>VERIFIED POLICY</Text>
               </View>
               <Text style={styles.policySectionText}>{disruption.hotel_policy.text}</Text>
             </View>
@@ -131,9 +130,9 @@ export default function RecoveryScreen({
             <View style={styles.policySectionBox}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.policySectionTitle}>
-                  {disruption.airline_policy.title || '✈️ AirIndia SP-952 Policy (demo-arilines.vercel.app)'}
+                  {disruption.airline_policy.title || 'AirIndia DGCA Delay Charter'}
                 </Text>
-                <Text style={{ fontSize: 9, fontWeight: '700', color: '#0284C7' }}>TINYFISH SCRAPED</Text>
+                <Text style={{ fontSize: 9, fontWeight: '700', color: '#0284C7' }}>VERIFIED POLICY</Text>
               </View>
               <Text style={styles.policySectionText}>{disruption.airline_policy.text}</Text>
             </View>
@@ -145,22 +144,22 @@ export default function RecoveryScreen({
           {/* Option 1: Hotel Hold */}
           <View style={styles.recoveryOptionCard}>
             <View style={styles.recoveryOptionHeader}>
-              <Text style={styles.recoveryOptionBadge}>PRIMARY ACTION • ZERO PENALTY</Text>
+              <Text style={styles.recoveryOptionBadge}>ROOM GUARANTEE • ZERO PENALTY</Text>
               <Text style={styles.badgeGreen}>Low Impact</Text>
             </View>
             <Text style={styles.recoveryOptionTitle}>Hold Deluxe Room Until 04:00</Text>
             <Text style={styles.recoveryOptionDesc}>
-              Auto-dispatches verified delay certificate to StayPulse front desk. Holds Deluxe Room past midnight.
+              Dispatches delay certificate to StayPulse front desk. Keeps room reservation held through early morning.
             </Text>
             <View style={styles.recoveryOptionFooter}>
-              <Text style={styles.recoveryTimeText}>Expected response: Instant hold confirmation</Text>
+              <Text style={styles.recoveryTimeText}>Status: Instant hold confirmation</Text>
               <TouchableOpacity
                 style={[styles.approveActionBtn, holdApproved && { backgroundColor: '#059669' }]}
                 onPress={() => setHoldApproved(!holdApproved)}
                 activeOpacity={0.8}
               >
                 <Text style={styles.approveActionBtnText}>
-                  {holdApproved ? '✓ Hold Confirmed' : '⚡ Approve Hotel Hold'}
+                  {holdApproved ? 'Room Hold Active' : 'Confirm Room Hold'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -169,22 +168,22 @@ export default function RecoveryScreen({
           {/* Option 2: Re-time Cab */}
           <View style={styles.recoveryOptionCard}>
             <View style={styles.recoveryOptionHeader}>
-              <Text style={styles.recoveryOptionBadge}>TRANSIT SYNC</Text>
+              <Text style={styles.recoveryOptionBadge}>AIRPORT TRANSFER</Text>
               <Text style={styles.badgeAmber}>Medium Impact</Text>
             </View>
             <Text style={styles.recoveryOptionTitle}>Re-time Airport Chauffeur to 01:45</Text>
             <Text style={styles.recoveryOptionDesc}>
-              Sends updated landing timestamp (01:15 BOM T6) to cab driver to waive wait fees.
+              Synchronizes driver pickup with revised 01:15 BOM Terminal 6 landing time.
             </Text>
             <View style={styles.recoveryOptionFooter}>
-              <Text style={styles.recoveryTimeText}>Est. savings: ₹450 waiting charge waived</Text>
+              <Text style={styles.recoveryTimeText}>Benefit: Waiting fees waived</Text>
               <TouchableOpacity
                 style={[styles.approveActionBtn, cabRetimed && { backgroundColor: '#059669' }]}
                 onPress={() => setCabRetimed(!cabRetimed)}
                 activeOpacity={0.8}
               >
                 <Text style={styles.approveActionBtnText}>
-                  {cabRetimed ? '✓ Cab Retimed' : 'Sync Chauffeur Pickup'}
+                  {cabRetimed ? 'Chauffeur Synced' : 'Sync Chauffeur Pickup'}
                 </Text>
               </TouchableOpacity>
             </View>
