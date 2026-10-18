@@ -5,6 +5,7 @@ import { styles } from '../styles/appStyles';
 export default function MonitorScreen({
   disruption,
   user,
+  hasDelayAlert,
   onViewImpact,
   onNavigateToAddTrip,
   onTriggerDelayAlert,
@@ -15,6 +16,13 @@ export default function MonitorScreen({
     disruption?.active_cadence_tier || 'IMMINENT'
   );
   const [secondsToNextPing, setSecondsToNextPing] = useState(180);
+  const [delayTriggered, setDelayTriggered] = useState(hasDelayAlert || false);
+
+  useEffect(() => {
+    if (hasDelayAlert) {
+      setDelayTriggered(true);
+    }
+  }, [hasDelayAlert]);
 
   // Countdown timer for next ping
   useEffect(() => {
@@ -28,10 +36,11 @@ export default function MonitorScreen({
     setChecking(true);
     setTimeout(() => {
       setChecking(false);
+      setDelayTriggered(true);
       setLastCheckedTime('Just now');
       setSecondsToNextPing(300);
       if (onTriggerDelayAlert) onTriggerDelayAlert(true);
-    }, 1800);
+    }, 1500);
   };
 
   const formatCountdown = (secs) => {
@@ -140,17 +149,17 @@ export default function MonitorScreen({
           </View>
 
           {/* 2. CASCADING DELAY ALERT HERO BANNER */}
-          {disruption.has_delay && (
+          {delayTriggered && disruption.has_delay && (
             <View style={styles.monitorAlertHero}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={{ fontSize: 16 }}>⚠️</Text>
                 <Text style={styles.monitorAlertHeroTitle}>
-                  {disruption.delay_text || 'Flight Delay Detected: +2h 30m'}
+                  {disruption.delay_text || 'Flight Delay: +2h 15m'}
                 </Text>
               </View>
               <Text style={styles.monitorAlertHeroText}>
                 {disruption.delay_detail ||
-                  'IndiGo 6E-2041 departure from DEL pushed to 14:00. This threatens your check-in at Taj Lands End!'}
+                  'AirIndia SP-952 pushed to 19:15. Delayed BOM arrival at 01:15 impacts hotel check-in.'}
               </Text>
               <TouchableOpacity
                 style={styles.monitorAlertHeroBtn}
@@ -169,43 +178,73 @@ export default function MonitorScreen({
             ACTIVE MONITORED BOOKINGS ({disruption.bookings?.length || 0})
           </Text>
 
-          {disruption.bookings?.map((b) => (
-            <View key={b.id} style={styles.monitorBookingCard}>
-              <View style={styles.monitorBookingHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 18 }}>{b.icon || '✈️'}</Text>
-                  <View>
-                    <Text style={styles.monitorBookingTitle}>{b.title}</Text>
-                    <Text style={{ fontSize: 10, color: '#786C5E' }}>Portal: {b.portal}</Text>
+          {disruption.bookings?.map((b) => {
+            const isDelayed = delayTriggered && b.status_badge?.includes('DELAY');
+            const isAtRisk = delayTriggered && b.status_badge?.includes('AT RISK');
+            const currentBadge = delayTriggered
+              ? b.status_badge
+              : (b.status_badge_normal || 'ON TIME');
+            const currentSchedule = delayTriggered
+              ? b.schedule
+              : (b.schedule_normal || '17:00 → 23:00 (19 Oct 2026)');
+
+            return (
+              <View key={b.id} style={styles.monitorBookingCard}>
+                <View style={styles.monitorBookingHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ fontSize: 18 }}>{b.icon || '✈️'}</Text>
+                    <View>
+                      <Text style={styles.monitorBookingTitle}>{b.title}</Text>
+                      <Text style={{ fontSize: 10, color: '#786C5E' }}>Portal: {b.portal}</Text>
+                    </View>
+                  </View>
+                  <View
+                    style={{
+                      backgroundColor: isDelayed ? '#FEF2F2' : (isAtRisk ? '#FEF3C7' : '#ECFDF5'),
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 6,
+                      borderWidth: 1,
+                      borderColor: isDelayed ? '#FCA5A5' : (isAtRisk ? '#FCD34D' : '#A7F3D0'),
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: '800',
+                        color: isDelayed ? '#DC2626' : (isAtRisk ? '#B45309' : '#059669'),
+                      }}
+                    >
+                      {currentBadge}
+                    </Text>
                   </View>
                 </View>
-                <View style={{ backgroundColor: b.status_badge.includes('DELAY') ? '#FEF2F2' : '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: b.status_badge.includes('DELAY') ? '#FCA5A5' : '#FCD34D' }}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: b.status_badge.includes('DELAY') ? '#DC2626' : '#B45309' }}>
-                    {b.status_badge}
+
+                <View style={styles.monitorDetailRow}>
+                  <Text style={styles.monitorDetailLabel}>Booking / PNR ID:</Text>
+                  <Text style={styles.monitorDetailVal}>{b.pnr}</Text>
+                </View>
+                <View style={styles.monitorDetailRow}>
+                  <Text style={styles.monitorDetailLabel}>Scheduled Time:</Text>
+                  <Text style={styles.monitorDetailVal}>{currentSchedule}</Text>
+                </View>
+                {delayTriggered && b.est_arrival && (
+                  <View style={styles.monitorDetailRow}>
+                    <Text style={styles.monitorDetailLabel}>Est. Arrival with Delay:</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#DC2626' }}>
+                      {b.est_arrival}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.monitorDetailRow}>
+                  <Text style={styles.monitorDetailLabel}>TinyFish Radar Check:</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#0284C7' }}>
+                    {b.last_check}
                   </Text>
                 </View>
               </View>
-
-              <View style={styles.monitorDetailRow}>
-                <Text style={styles.monitorDetailLabel}>Booking / PNR ID:</Text>
-                <Text style={styles.monitorDetailVal}>{b.pnr}</Text>
-              </View>
-              <View style={styles.monitorDetailRow}>
-                <Text style={styles.monitorDetailLabel}>Scheduled Time:</Text>
-                <Text style={styles.monitorDetailVal}>{b.schedule}</Text>
-              </View>
-              {b.est_arrival && (
-                <View style={styles.monitorDetailRow}>
-                  <Text style={styles.monitorDetailLabel}>Est. Arrival with Delay:</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#DC2626' }}>{b.est_arrival}</Text>
-                </View>
-              )}
-              <View style={styles.monitorDetailRow}>
-                <Text style={styles.monitorDetailLabel}>TinyFish Radar Check:</Text>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: '#0284C7' }}>{b.last_check}</Text>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       )}
     </View>

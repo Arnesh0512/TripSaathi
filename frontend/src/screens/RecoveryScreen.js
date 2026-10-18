@@ -100,7 +100,7 @@ export default function RecoveryScreen({
             <View>
               <Text style={styles.recoveryStatLabel}>TOTAL BOOKING VALUE PROTECTED</Text>
               <Text style={styles.recoveryStatAmount}>
-                {disruption.protected_amount || '₹12,007 • 100% RECOVERED'}
+                {disruption.protected_amount || '₹12,506 • 100% RECOVERED'}
               </Text>
             </View>
             <View style={{ backgroundColor: '#D1FAE5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
@@ -118,7 +118,7 @@ export default function RecoveryScreen({
             <View style={styles.policySectionBox}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.policySectionTitle}>
-                  {disruption.hotel_policy.title || '🏨 Taj Lands End Policy (stay-pulse.vercel.app)'}
+                  {disruption.hotel_policy.title || '🏨 StayPulse Policy (stay-pulse.vercel.app)'}
                 </Text>
                 <Text style={{ fontSize: 9, fontWeight: '700', color: '#0284C7' }}>TINYFISH SCRAPED</Text>
               </View>
@@ -131,7 +131,7 @@ export default function RecoveryScreen({
             <View style={styles.policySectionBox}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.policySectionTitle}>
-                  {disruption.airline_policy.title || '✈️ IndiGo 6E-2041 Policy (demo-arilines.vercel.app)'}
+                  {disruption.airline_policy.title || '✈️ AirIndia SP-952 Policy (demo-arilines.vercel.app)'}
                 </Text>
                 <Text style={{ fontSize: 9, fontWeight: '700', color: '#0284C7' }}>TINYFISH SCRAPED</Text>
               </View>
@@ -148,9 +148,9 @@ export default function RecoveryScreen({
               <Text style={styles.recoveryOptionBadge}>PRIMARY ACTION • ZERO PENALTY</Text>
               <Text style={styles.badgeGreen}>Low Impact</Text>
             </View>
-            <Text style={styles.recoveryOptionTitle}>Hold Hotel Check-in Until 23:59</Text>
+            <Text style={styles.recoveryOptionTitle}>Hold Deluxe Room Until 04:00</Text>
             <Text style={styles.recoveryOptionDesc}>
-              Auto-dispatches verified delay certificate with PNR-DEL-882 to Taj Lands End front desk. Keeps Deluxe Room held through midnight.
+              Auto-dispatches verified delay certificate to StayPulse front desk. Holds Deluxe Room past midnight.
             </Text>
             <View style={styles.recoveryOptionFooter}>
               <Text style={styles.recoveryTimeText}>Expected response: Instant hold confirmation</Text>
@@ -172,9 +172,9 @@ export default function RecoveryScreen({
               <Text style={styles.recoveryOptionBadge}>TRANSIT SYNC</Text>
               <Text style={styles.badgeAmber}>Medium Impact</Text>
             </View>
-            <Text style={styles.recoveryOptionTitle}>Re-time Airport Chauffeur to 16:30</Text>
+            <Text style={styles.recoveryOptionTitle}>Re-time Airport Chauffeur to 01:45</Text>
             <Text style={styles.recoveryOptionDesc}>
-              Sends updated landing timestamp (16:15 BOM T2) to cab driver to waive wait fees.
+              Sends updated landing timestamp (01:15 BOM T6) to cab driver to waive wait fees.
             </Text>
             <View style={styles.recoveryOptionFooter}>
               <Text style={styles.recoveryTimeText}>Est. savings: ₹450 waiting charge waived</Text>

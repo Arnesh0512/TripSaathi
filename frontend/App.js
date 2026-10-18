@@ -51,7 +51,7 @@ export default function App() {
         .then((data) => {
           if (data?.has_disruption && data?.data) {
             setDisruptionData(data.data);
-            setHasDelayAlert(true);
+            setHasDelayAlert(false);
           } else {
             setDisruptionData(null);
             setHasDelayAlert(false);
@@ -333,6 +333,7 @@ export default function App() {
                 <MonitorScreen
                   disruption={disruptionData?.monitor}
                   user={user}
+                  hasDelayAlert={hasDelayAlert}
                   onViewImpact={() => setActiveTab('IMPACT')}
                   onNavigateToAddTrip={() => setActiveTab('ADD_TRIP')}
                   onTriggerDelayAlert={(active) => setHasDelayAlert(active)}

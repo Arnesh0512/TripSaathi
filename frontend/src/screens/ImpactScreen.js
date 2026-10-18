@@ -67,17 +67,17 @@ export default function ImpactScreen({
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View>
                 <Text style={styles.delayHeroKicker}>FLIGHT DELAY DETECTED</Text>
-                <Text style={styles.delayHeroTime}>{disruption.delay_time || '+2h 30m'}</Text>
+                <Text style={styles.delayHeroTime}>{disruption.delay_time || '+2h 15m'}</Text>
               </View>
               <View style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: '#DC2626' }}>
                 <Text style={{ fontSize: 11, fontWeight: '800', color: '#DC2626' }}>
-                  {disruption.lag_minutes || '150 MIN LAG'}
+                  {disruption.lag_minutes || '135 MIN LAG'}
                 </Text>
               </View>
             </View>
             <Text style={styles.delayHeroLocation}>
               {disruption.hero_description ||
-                'IndiGo 6E-2041 (DEL → BOM): Touchdown at Mumbai Airport pushed from 13:45 to 16:15.'}
+                'AirIndia SP-952 (DEL → BOM): Touchdown pushed from 23:00 to 01:15.'}
             </Text>
           </View>
 
@@ -106,11 +106,11 @@ export default function ImpactScreen({
             <View style={{ flex: 1, gap: 2 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '800', color: '#DC2626' }}>
-                  🏨 Hotel Reservation at Taj Lands End
+                  🏨 StayPulse Deluxe Airport View Room
                 </Text>
               </View>
               <Text style={{ fontSize: 11, color: '#7F1D1D', lineHeight: 16 }}>
-                StayPulse policy stipulates standard unnotified check-in expires at 18:00. Arriving at 17:45 gives only a 15-minute buffer before the room risks being reassigned to waitlisted travelers.
+                Expected arrival 02:00 exceeds standard midnight cut-off. Room held under direct slot policy.
               </Text>
             </View>
             <Text style={[styles.badgeAmber, { backgroundColor: '#FEE2E2', color: '#DC2626', borderColor: '#F87171' }]}>
@@ -123,7 +123,7 @@ export default function ImpactScreen({
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.impactItemTitle}>🚗 Pre-Booked Airport Chauffeur</Text>
               <Text style={styles.impactItemSub}>
-                Airport cab pickup window (14:30) exceeded. Chauffeur pickup must be synchronized with revised BOM arrival.
+                Pickup rescheduled to 01:45 to match revised AirIndia SP-952 landing at BOM T6.
               </Text>
             </View>
             <Text style={styles.badgeAmber}>Medium Risk</Text>

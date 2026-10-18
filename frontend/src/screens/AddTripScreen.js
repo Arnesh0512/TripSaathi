@@ -410,7 +410,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
         legs: legs.map((leg, idx) => ({
           leg_index: idx + 1,
           from_point: leg.fromPoint || (idx === 0 ? 'Delhi' : 'Mumbai'),
-          to_point: leg.toPoint || (idx === 0 ? 'Mumbai' : 'Taj Lands End'),
+          to_point: leg.toPoint || (idx === 0 ? 'Mumbai' : 'Deluxe Airport View Room'),
           mode: leg.mode,
           departure_time: leg.departureTime,
           arrival_time: leg.arrivalTime,
@@ -419,7 +419,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
           notes: leg.notes,
         })),
         stay_plan: {
-          city_or_hotel: stayPlan.cityOrHotel || 'Taj Lands End Mumbai',
+          city_or_hotel: stayPlan.cityOrHotel || 'Deluxe Airport View Room Mumbai',
           days_count: parseInt(stayPlan.daysCount) || 2,
           people_count: parseInt(stayPlan.peopleCount) || 1,
           hotel_budget: parseFloat(stayPlan.hotelBudget) || 12000.0,
@@ -1184,7 +1184,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
                   </View>
 
                   <Text style={styles.legResultRoute}>
-                    {stayPlan.cityOrHotel || 'Taj Lands End, Bandstand Mumbai'}
+                    {stayPlan.cityOrHotel || 'Deluxe Airport View Room, Mumbai'}
                   </Text>
                   <Text style={styles.legResultSchedule}>
                     📅 Check-in: {stayPlan.checkinDate || '18 Oct 2026, 14:00'} • {stayPlan.daysCount || 2} Nights • {stayPlan.peopleCount || 2} Guests
