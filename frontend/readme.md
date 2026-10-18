@@ -127,11 +127,6 @@ com.arnesh.tripsaathi (asked if not present in app.json for android,ios)
 
 
 
-mkdir .eas\workflows && type nul > .eas\workflows\create-production-builds.yml
 
-
-
-
-
-
-npx eas-cli@latest workflow:run create-production-builds.yml
+npx eas-cli@latest workflow:run <build name>.yml
+-> using eas cli it manually executes a build on eas cloud
