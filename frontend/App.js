@@ -6,6 +6,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Image,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -208,6 +209,11 @@ export default function App() {
         {isDesktopWeb && (
           <View style={styles.desktopControlBar}>
             <View style={styles.desktopControlLeft}>
+              <Image
+                source={require('./assets/logo.png')}
+                style={{ width: 22, height: 22, borderRadius: 5, marginRight: 6 }}
+                resizeMode="cover"
+              />
               <Text style={styles.desktopBrand}>TripSaathi</Text>
               <Text style={styles.desktopModeTag}>Mobile Preview Mode (412×860)</Text>
             </View>

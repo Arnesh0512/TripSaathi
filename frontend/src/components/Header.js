@@ -5,9 +5,16 @@ import { styles } from '../styles/appStyles';
 export default function Header({ user, onOpenProfile, onGoogleSignIn, onFastSignIn }) {
   return (
     <View style={styles.mobileHeader}>
-      <View>
-        <Text style={styles.appHeaderTitle}>TripSaathi</Text>
-        <Text style={styles.appHeaderSub}>Connected Travel Recovery</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Image
+          source={require('../../assets/logo.png')}
+          style={{ width: 38, height: 38, borderRadius: 8 }}
+          resizeMode="cover"
+        />
+        <View>
+          <Text style={styles.appHeaderTitle}>TripSaathi</Text>
+          <Text style={styles.appHeaderSub}>Connected Travel Recovery</Text>
+        </View>
       </View>
 
       {user ? (
