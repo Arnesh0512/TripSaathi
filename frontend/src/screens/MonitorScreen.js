@@ -56,9 +56,6 @@ export default function MonitorScreen({ onViewImpact, onNavigateToAddTrip, onTri
         </View>
 
         <Text style={styles.monitorCadenceTitle}>T − 2 Hours to Departure</Text>
-        <Text style={styles.monitorCadenceDesc}>
-          TinyFish increases verification frequency as departure draws nearer. Long-range checks run every 2–3 hrs; day-of travel runs every 5 minutes.
-        </Text>
 
         {/* 3-Tier Decay Visualization */}
         <View style={styles.cadenceTiersGrid}>
@@ -104,7 +101,7 @@ export default function MonitorScreen({ onViewImpact, onNavigateToAddTrip, onTri
             {checking ? (
               <ActivityIndicator color="#fff" size="small" style={{ paddingHorizontal: 12 }} />
             ) : (
-              <Text style={styles.monitorPingBtnText}>⚡ Check Now</Text>
+              <Text style={styles.monitorPingBtnText}>Check Now</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -197,14 +194,6 @@ export default function MonitorScreen({ onViewImpact, onNavigateToAddTrip, onTri
           <Text style={styles.monitorDetailLabel}>TinyFish Radar Check:</Text>
           <Text style={{ fontSize: 11, fontWeight: '600', color: '#0284C7' }}>Scraped 3m ago • Room Held</Text>
         </View>
-      </View>
-
-      {/* Scope Footer */}
-      <View style={styles.scopeNoteBox}>
-        <Text style={styles.scopeNoteTitle}>AUTONOMOUS RADAR SCOPE</Text>
-        <Text style={styles.scopeNoteBody}>
-          TinyFish runs headless browser workers to check PNRs and booking codes without spamming airline servers. Adaptive exponential decay keeps API usage lean while ensuring zero surprise delays.
-        </Text>
       </View>
     </View>
   );
