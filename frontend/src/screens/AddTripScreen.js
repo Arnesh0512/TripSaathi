@@ -418,7 +418,7 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
     const pax = planPeopleCount || '1';
 
     if (leg.mode === 'airplane') {
-      return `https://demo-arilines.vercel.app/search?origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
+      return `https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa?flight_id=SP-952&origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
     }
     if (leg.mode === 'cab') {
       return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(leg.fromPoint || 'Delhi')}&destination=${encodeURIComponent(leg.toPoint || 'Airport')}`;
@@ -426,14 +426,18 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
     if (leg.mode === 'train') {
       return `https://www.irctc.co.in/nget/train-search`;
     }
-    return `https://demo-arilines.vercel.app/search?origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
+    return `https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa?flight_id=SP-952&origin=${origin}&destination=${dest}&date=${travelDate}&passengers=${pax}&class=economy`;
   };
 
   const getHotelAutofillUrl = () => {
     if (stayPlan.preferredServiceUrl && stayPlan.preferredServiceUrl.trim().length > 0) {
       return stayPlan.preferredServiceUrl.trim();
     }
-    return 'https://stay-pulse.vercel.app/hotels/6ad105503c1fd4003fa477c2';
+    const city = (stayPlan.cityOrHotel || '').toLowerCase();
+    if (city.includes('delhi')) {
+      return 'https://stay-pulse.vercel.app/hotels/6ad105503c1fd4003fa477cb';
+    }
+    return 'https://stay-pulse.vercel.app/hotels/6ad105503c1fd4003fa477c5';
   };
 
   const handleOpenUrl = (url) => {
@@ -1066,24 +1070,6 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
           {/* TINYFISH EXECUTION RESULTS STATE */}
           {planExecutionState === 'RESULTS' && (
             <View style={styles.execResultsContainer}>
-              {/* Header Info */}
-              <View style={styles.execResultsHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Image
-                      source={require('../../assets/tinyfish-logo.png')}
-                      style={{ width: 28, height: 28, resizeMode: 'contain' }}
-                    />
-                    <Text style={styles.execResultsTitle}>TinyFish Route Execution Plan</Text>
-                  </View>
-                  <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: '#A7F3D0' }}>
-                    <Text style={{ fontSize: 9, fontWeight: '800', color: '#047857' }}>BUDGET OPTIMIZED</Text>
-                  </View>
-                </View>
-                <Text style={styles.execResultsSub}>
-                  Optimal route calculated within ₹{grandTotalBudget.toLocaleString('en-IN')}. Follow the prefilled autofill links below to complete bookings, then tap "Registered".
-                </Text>
-              </View>
 
               {/* Sequential Legs Display */}
               {legs.slice(0, revealedLegs).map((leg, idx) => {

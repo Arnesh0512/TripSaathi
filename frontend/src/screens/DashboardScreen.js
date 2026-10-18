@@ -193,32 +193,6 @@ export default function DashboardScreen({
         </View>
       </View>
 
-      {/* Database Sync & User Indicator Strip */}
-      <View style={styles.dashboardDbSyncRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ fontSize: 13 }}>👤</Text>
-          <Text style={styles.dashboardUserEmailText}>{user.email}</Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={styles.dashboardDbConnectedBadge}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#047857' }} />
-            <Text style={styles.dashboardDbConnectedText}>MONGODB LIVE</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => fetchTripsFromDb(true)}
-            disabled={refreshing}
-            style={{ padding: 4 }}
-            activeOpacity={0.7}
-          >
-            {refreshing ? (
-              <ActivityIndicator size="small" color="#A83827" />
-            ) : (
-              <Text style={{ fontSize: 12 }}>🔄</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {/* Subtabs Filter: All | Active | Past */}
       <View style={styles.subtabsRow}>
