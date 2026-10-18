@@ -2806,4 +2806,32 @@ export const styles = StyleSheet.create({
     color: THEME.textSecondary,
     marginTop: 2,
   },
+  emptyStateCard: {
+    backgroundColor: '#FAF7F2',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EAE3D7',
+    padding: 24,
+    alignItems: 'center',
+    marginVertical: 14,
+    gap: 8,
+  },
+  emptyStateIcon: {
+    fontSize: 36,
+    marginBottom: 4,
+  },
+  emptyStateTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 17,
+    fontWeight: '700',
+    color: THEME.text,
+    textAlign: 'center',
+  },
+  emptyStateDesc: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
 });

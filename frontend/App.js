@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { authApi, userApi } from './src/services/api';
+import { authApi, userApi, tripApi } from './src/services/api';
 import {
   configureGoogleSignIn,
   initWebGoogleSignIn,
@@ -39,8 +39,33 @@ export default function App() {
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('DASHBOARD'); // 'DASHBOARD' | 'ADD_TRIP' | 'MONITOR' | 'IMPACT' | 'RECOVERY'
   const [hasDelayAlert, setHasDelayAlert] = useState(false);
+  const [disruptionData, setDisruptionData] = useState(null);
   const [dashboardSubtab, setDashboardSubtab] = useState('Overview'); // 'Overview' | 'Updates' | 'Alerts'
   const [phoneFrameMode, setPhoneFrameMode] = useState(true); // Toggle phone frame vs full width on web
+
+  // Fetch active disruption from MongoDB whenever user / token changes
+  useEffect(() => {
+    if (token && user?.email) {
+      tripApi.getActiveDisruption(token)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.has_disruption && data?.data) {
+            setDisruptionData(data.data);
+            setHasDelayAlert(true);
+          } else {
+            setDisruptionData(null);
+            setHasDelayAlert(false);
+          }
+        })
+        .catch(() => {
+          setDisruptionData(null);
+          setHasDelayAlert(false);
+        });
+    } else {
+      setDisruptionData(null);
+      setHasDelayAlert(false);
+    }
+  }, [token, user]);
 
   // Profile Form State
   const [name, setName] = useState('');
@@ -305,19 +330,30 @@ export default function App() {
 
               {activeTab === 'MONITOR' && (
                 <MonitorScreen
+                  disruption={disruptionData?.monitor}
+                  user={user}
                   onViewImpact={() => setActiveTab('IMPACT')}
                   onNavigateToAddTrip={() => setActiveTab('ADD_TRIP')}
                   onTriggerDelayAlert={(active) => setHasDelayAlert(active)}
-                  isDelayAlertActive={hasDelayAlert}
                 />
               )}
 
               {activeTab === 'IMPACT' && (
-                <ImpactScreen onNavigateToRecovery={() => setActiveTab('RECOVERY')} />
+                <ImpactScreen
+                  disruption={disruptionData?.impact}
+                  user={user}
+                  onNavigateToRecovery={() => setActiveTab('RECOVERY')}
+                  onNavigateToDashboard={() => setActiveTab('DASHBOARD')}
+                />
               )}
 
               {activeTab === 'RECOVERY' && (
-                <RecoveryScreen />
+                <RecoveryScreen
+                  disruption={disruptionData?.recovery}
+                  user={user}
+                  token={token}
+                  onNavigateToDashboard={() => setActiveTab('DASHBOARD')}
+                />
               )}
             </ScrollView>
 

@@ -14,6 +14,7 @@ client = MongoClient(
 db = client["tripsaathi"]
 user_collection = db["user"]
 trips_collection = db["trips"]
+disruptions_collection = db["disruptions"]
 
 if __name__ == "__main__":
     try:

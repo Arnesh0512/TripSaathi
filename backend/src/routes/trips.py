@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from bson import ObjectId
 from typing import Optional
-from database import trips_collection
+from database import trips_collection, disruptions_collection
 from verify.token import verify_access_token
 from verify.user import verify_user_payload
 from schemas.trip import ExistingTripCreate, PlanTripCreate
@@ -171,6 +171,63 @@ def get_user_trips(current_user: Optional[dict] = Depends(get_optional_user)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+
+@router.get("/active-disruption")
+def get_active_disruption(current_user: Optional[dict] = Depends(get_optional_user)):
+    """
+    Fetch active disruption intelligence (monitor, cascading impact, recovery policies, and checklist)
+    stored in MongoDB for the authenticated user.
+    If not signed in or no disruption stored for user, returns has_disruption: False.
+    """
+    try:
+        if not current_user or not current_user.get("email"):
+            return {
+                "status": "SUCCESS",
+                "has_disruption": False,
+                "data": None
+            }
+
+        user_email = current_user["email"].lower()
+        doc = disruptions_collection.find_one({"user_email": user_email})
+        if not doc:
+            return {
+                "status": "SUCCESS",
+                "has_disruption": False,
+                "data": None
+            }
+
+        doc["_id"] = str(doc["_id"])
+        return {
+            "status": "SUCCESS",
+            "has_disruption": True,
+            "data": doc
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database query error: {str(e)}")
+
+@router.post("/active-disruption/toggle-todo")
+def toggle_disruption_todo(
+    payload: dict,
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
+    """
+    Toggle done status of a recovery checklist item in MongoDB.
+    """
+    if not current_user or not current_user.get("email"):
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    todo_id = payload.get("todo_id")
+    is_done = payload.get("done")
+
+    try:
+        user_email = current_user["email"].lower()
+        disruptions_collection.update_one(
+            {"user_email": user_email, "recovery.todos.id": todo_id},
+            {"$set": {"recovery.todos.$.done": is_done}}
+        )
+        return {"status": "SUCCESS", "todo_id": todo_id, "done": is_done}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update todo: {str(e)}")
 
 @router.delete("/{trip_id}")
 def delete_trip(

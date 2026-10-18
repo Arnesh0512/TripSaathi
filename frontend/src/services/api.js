@@ -104,6 +104,27 @@ export const tripApi = {
       headers,
     });
   },
+  getActiveDisruption: async (jwtToken = null) => {
+    const headers = {};
+    if (jwtToken) {
+      headers.Authorization = `Bearer ${jwtToken}`;
+    }
+    return await callBackend('/trip/active-disruption', {
+      method: 'GET',
+      headers,
+    });
+  },
+  toggleDisruptionTodo: async (todoId, done, jwtToken = null) => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (jwtToken) {
+      headers.Authorization = `Bearer ${jwtToken}`;
+    }
+    return await callBackend('/trip/active-disruption/toggle-todo', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ todo_id: todoId, done }),
+    });
+  },
   parseTicketPdf: async (formData, jwtToken = null) => {
     const headers = {};
     if (jwtToken) {
