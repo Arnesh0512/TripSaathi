@@ -43,13 +43,38 @@ function pad(n) {
 /**
  * Parses existing human-readable or ISO strings to { year, monthIndex, day, hour, minute }
  */
-function parseInitialState(val, mode) {
-  const now = new Date();
-  let year = now.getFullYear();
-  let month = now.getMonth();
-  let day = now.getDate();
+function parseInitialState(val, mode, defaultDate = null) {
+  let year, month, day;
   let hour = 12;
   let minute = 0;
+
+  // Determine base date from defaultDate if provided, otherwise today
+  let baseDate = new Date();
+  if (defaultDate && typeof defaultDate === 'string' && defaultDate.trim()) {
+    const dStr = defaultDate.trim();
+    const dMatch = dStr.match(/(\d{1,2})\s+([A-Za-z]{3,9})(?:[\s,]+(\d{4}))?/i);
+    if (dMatch) {
+      day = parseInt(dMatch[1], 10);
+      const mStr = dMatch[2].slice(0, 3).toLowerCase();
+      if (MONTH_MAP[mStr] !== undefined) {
+        month = MONTH_MAP[mStr];
+      }
+      if (dMatch[3]) {
+        year = parseInt(dMatch[3], 10);
+      }
+    } else {
+      const isoDMatch = dStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoDMatch) {
+        year = parseInt(isoDMatch[1], 10);
+        month = parseInt(isoDMatch[2], 10) - 1;
+        day = parseInt(isoDMatch[3], 10);
+      }
+    }
+  }
+
+  if (year === undefined) year = baseDate.getFullYear();
+  if (month === undefined) month = baseDate.getMonth();
+  if (day === undefined) day = baseDate.getDate();
 
   if (!val || typeof val !== 'string') {
     return { year, month, day, hour, minute };
@@ -103,45 +128,56 @@ export default function DateTimePickerUnderline({
   value,
   onChange,
   mode = 'datetime', // 'datetime' | 'date' | 'time'
+  defaultDate = null,
   placeholder = 'Select date & time',
   hasWarning = false,
   alignRight = false,
 }) {
   const [modalVisible, setModalVisible] = useState(false);
 
-  const init = parseInitialState(value, mode);
+  const init = parseInitialState(value, mode, defaultDate);
   const [viewYear, setViewYear] = useState(init.year);
   const [viewMonth, setViewMonth] = useState(init.month);
   const [pickedDay, setPickedDay] = useState(init.day);
   const [pickedHour, setPickedHour] = useState(init.hour);
   const [pickedMinute, setPickedMinute] = useState(init.minute);
 
-  // Sync internal state when external value changes
+  // Sync internal state when external value, mode, or defaultDate changes
   useEffect(() => {
-    const updated = parseInitialState(value, mode);
+    const updated = parseInitialState(value, mode, defaultDate);
     setViewYear(updated.year);
     setViewMonth(updated.month);
     setPickedDay(updated.day);
     setPickedHour(updated.hour);
     setPickedMinute(updated.minute);
-  }, [value, mode]);
+  }, [value, mode, defaultDate]);
+
+  const handleOpenModal = () => {
+    const updated = parseInitialState(value, mode, defaultDate);
+    setViewYear(updated.year);
+    setViewMonth(updated.month);
+    setPickedDay(updated.day);
+    setPickedHour(updated.hour);
+    setPickedMinute(updated.minute);
+    setModalVisible(true);
+  };
 
   const handlePrevMonth = () => {
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear(viewYear - 1);
-    } else {
-      setViewMonth(viewMonth - 1);
-    }
+    let newMonth = viewMonth === 0 ? 11 : viewMonth - 1;
+    let newYear = viewMonth === 0 ? viewYear - 1 : viewYear;
+    const maxDays = new Date(newYear, newMonth + 1, 0).getDate();
+    if (pickedDay > maxDays) setPickedDay(maxDays);
+    setViewMonth(newMonth);
+    setViewYear(newYear);
   };
 
   const handleNextMonth = () => {
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear(viewYear + 1);
-    } else {
-      setViewMonth(viewMonth + 1);
-    }
+    let newMonth = viewMonth === 11 ? 0 : viewMonth + 1;
+    let newYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+    const maxDays = new Date(newYear, newMonth + 1, 0).getDate();
+    if (pickedDay > maxDays) setPickedDay(maxDays);
+    setViewMonth(newMonth);
+    setViewYear(newYear);
   };
 
   const handleHourStep = (delta) => {
@@ -202,7 +238,7 @@ export default function DateTimePickerUnderline({
           hasWarning && styles.underlineWarning,
           alignRight && styles.justifyEnd,
         ]}
-        onPress={() => setModalVisible(true)}
+        onPress={handleOpenModal}
         activeOpacity={0.75}
       >
         <Text style={styles.icon}>{iconEmoji}</Text>

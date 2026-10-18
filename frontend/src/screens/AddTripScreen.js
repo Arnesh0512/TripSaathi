@@ -29,12 +29,21 @@ const TRANSPORT_MODES = [
   { id: 'bus', label: 'Bus', icon: '🚌', color: '#7C3AED' },
 ];
 
+const formatTransitNodeTime = (dtStr) => {
+  if (!dtStr) return '--:--';
+  const m = dtStr.match(/^(\d{1,2}\s+[A-Za-z]{3})(?:\s+\d{4})?,?\s*(\d{1,2}:\d{2})/);
+  if (m) {
+    return `${m[1]}, ${m[2]}`;
+  }
+  return dtStr;
+};
+
 export default function AddTripScreen({ token, onAddTripSuccess }) {
   // Option 1 vs Option 2 Mode
   const [activeMode, setActiveMode] = useState('UPLOAD_TICKETS'); // 'UPLOAD_TICKETS' | 'PLAN_TRIP'
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [showPlaceholders, setShowPlaceholders] = useState(true);
+  const [showPlaceholders, setShowPlaceholders] = useState(false);
   const ph = (text) => (showPlaceholders ? text : '');
 
   // ----------------------------------------------------
@@ -932,7 +941,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                       <Text style={styles.routeNodeLabel} numberOfLines={1}>
                         {fromLabel}
                       </Text>
-                      <Text style={styles.routeNodeSub}>{leg.departureTime || '--:--'}</Text>
+                      <Text style={styles.routeNodeSub}>
+                        {formatTransitNodeTime(leg.departureTime)}
+                      </Text>
                     </View>
 
                     {/* Transit Connector Line with Mode Badge & Budget */}
@@ -954,7 +965,9 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                         <Text style={styles.routeNodeLabel} numberOfLines={1}>
                           {toLabel}
                         </Text>
-                        <Text style={styles.routeNodeSub}>{leg.arrivalTime || '--:--'}</Text>
+                        <Text style={styles.routeNodeSub}>
+                          {formatTransitNodeTime(leg.arrivalTime)}
+                        </Text>
                       </View>
                     )}
                   </React.Fragment>
@@ -1079,10 +1092,11 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                       />
                       <View style={{ marginTop: 4, width: '100%' }}>
                         <DateTimePickerUnderline
-                          mode="time"
+                          mode="datetime"
                           value={leg.departureTime}
+                          defaultDate={planStartDate}
                           onChange={(val) => handleUpdateLeg(leg.id, 'departureTime', val)}
-                          placeholder={ph('Time (e.g. 11:30)')}
+                          placeholder={ph('Departure Date & Time')}
                         />
                       </View>
                     </View>
@@ -1107,10 +1121,11 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
                       />
                       <View style={{ marginTop: 4, width: '100%', alignItems: 'flex-end' }}>
                         <DateTimePickerUnderline
-                          mode="time"
+                          mode="datetime"
                           value={leg.arrivalTime}
+                          defaultDate={leg.departureTime || planStartDate}
                           onChange={(val) => handleUpdateLeg(leg.id, 'arrivalTime', val)}
-                          placeholder={ph('Time (e.g. 12:15)')}
+                          placeholder={ph('Arrival Date & Time')}
                           alignRight={true}
                         />
                       </View>
