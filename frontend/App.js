@@ -21,7 +21,29 @@ import * as Linking from 'expo-linking';
 WebBrowser.maybeCompleteAuthSession();
 
 const DEV_MACHINE_IP = '192.168.1.11';
-const BACKEND_URL = Platform.OS === 'web' ? 'http://localhost:7000' : `http://${DEV_MACHINE_IP}:7000`;
+const LOCAL_BACKEND_URL = Platform.OS === 'web' ? 'http://localhost:7000' : `http://${DEV_MACHINE_IP}:7000`;
+// Railway deployed backend URL (can be customized or passed via EXPO_PUBLIC_BACKEND_URL)
+const RAILWAY_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://tripsaathi-production.up.railway.app';
+
+// Helper: Call Railway first; if unreachable, automatically falls back to Localhost / LAN
+async function callBackend(endpoint, options = {}, timeoutMs = 4000) {
+  if (RAILWAY_BACKEND_URL && !RAILWAY_BACKEND_URL.includes('your-railway-app')) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const res = await fetch(`${RAILWAY_BACKEND_URL}${endpoint}`, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      console.warn(`[TripSaathi] Railway backend unavailable. Falling back to local backend: ${LOCAL_BACKEND_URL}`);
+    }
+  }
+  return await fetch(`${LOCAL_BACKEND_URL}${endpoint}`, options);
+}
+
 const GOOGLE_CLIENT_ID = '258416843143-ahnf9rasq8blnra0gcq7rr5cn77s9qsd.apps.googleusercontent.com';
 
 // Warm Editorial Theme Palette matching TripSaathi Recovery Story
@@ -152,7 +174,7 @@ export default function App() {
   const exchangeGoogleTokenWithBackend = async (googleJwt) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/google`, {
+      const res = await callBackend('/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: googleJwt }),
@@ -174,7 +196,7 @@ export default function App() {
 
   const fetchUserProfile = async (jwtToken) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/user/profile`, {
+      const res = await callBackend('/user/profile', {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
       const data = await res.json();
@@ -213,7 +235,7 @@ export default function App() {
     setSavingProfile(true);
     setSaveMessage(null);
     try {
-      const res = await fetch(`${BACKEND_URL}/user/profile`, {
+      const res = await callBackend('/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
