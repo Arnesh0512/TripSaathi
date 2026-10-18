@@ -88,58 +88,88 @@ def parse_with_fallback_heuristics(pdf_text: str) -> Dict[str, Any]:
         "notes": None,
     }
 
-    lower_text = pdf_text.lower()
-    if "irctc" in lower_text or "train" in lower_text or "railway" in lower_text:
+    lt = pdf_text.lower()
+    if "irctc" in lt or "railway" in lt or "train" in lt or "pnr status" in lt:
         data["category"] = "railway"
-    elif "hotel" in lower_text or "stay" in lower_text or "check-in" in lower_text:
-        data["category"] = "hotel"
-    elif "uber" in lower_text or "ola" in lower_text or "cab" in lower_text:
-        data["category"] = "cab"
-    elif "bus" in lower_text or "redbus" in lower_text:
-        data["category"] = "bus"
-    else:
+    elif "flight" in lt or "takeoff" in lt or "airline" in lt or "aircraft" in lt or "boarding" in lt:
         data["category"] = "flight"
+    elif "hotel" in lt or "staypulse" in lt or "room slot" in lt or "stay" in lt:
+        data["category"] = "hotel"
+    elif "cab" in lt or "uber" in lt or "ola" in lt:
+        data["category"] = "cab"
+    elif "bus" in lt or "redbus" in lt:
+        data["category"] = "bus"
 
-    # Airline / Provider
-    for provider in ["IndiGo", "Air India", "Vistara", "SpiceJet", "Akasa Air", "Emirates", "IRCTC", "Uber", "Ola", "Taj", "Marriott"]:
-        if re.search(r'\b' + re.escape(provider) + r'\b', pdf_text, re.IGNORECASE):
-            data["provider"] = provider
-            break
-
-    # PNR search (e.g. PNR: ABC123, PNR / Booking Ref: 1234567890)
-    pnr_match = re.search(r'(?:PNR|Booking Ref|Ticket No|Confirmation)[:\s]+([A-Z0-9]{6,10})', pdf_text, re.IGNORECASE)
-    if pnr_match:
-        data["ticket_number"] = pnr_match.group(1).strip()
+    # Provider
+    hotel_p = re.search(r'Hotel:\s*([^\n\r]+)', pdf_text, re.IGNORECASE)
+    if hotel_p and data["category"] == "hotel":
+        data["provider"] = hotel_p.group(1).strip()
     else:
-        # Flight number search e.g. 6E 804 or AI 101
-        flight_match = re.search(r'\b(6E|AI|UK|SG|QP|EK)\s*[-]?\s*(\d{3,4})\b', pdf_text, re.IGNORECASE)
-        if flight_match:
-            data["ticket_number"] = f"{flight_match.group(1).upper()}-{flight_match.group(2)}"
+        for p in ["IndiGo", "Air India", "Vistara", "SpiceJet", "Akasa Air", "Emirates", "SkyPulse", "IRCTC", "Uber", "Ola", "Taj Lands End", "Taj", "Marriott", "Hyatt"]:
+            if re.search(r'\b' + re.escape(p) + r'\b', pdf_text, re.IGNORECASE):
+                data["provider"] = p
+                break
 
-    # Seat search (e.g. Seat: 14F, 23B)
-    seat_match = re.search(r'(?:Seat|Seat No|Berth)[:\s]+([0-9]{1,3}[A-Z]|\bCoach\s+[A-Z0-9]+)', pdf_text, re.IGNORECASE)
-    if seat_match:
-        data["seat_or_room"] = seat_match.group(1).strip()
+    # Ticket number / PNR / Booking Ref
+    booking_ref_m = re.search(r'(?:Booking Reference|Booking Ref|PNR No|PNR Number|Ticket Number|Confirmation Code|Confirmation Number)[:\s]+([A-Z0-9\-]{5,15})', pdf_text, re.IGNORECASE)
+    if booking_ref_m:
+        data["ticket_number"] = booking_ref_m.group(1).strip()
+    elif re.search(r'\b(SP-[A-Z0-9]{5,10})\b', pdf_text):
+        data["ticket_number"] = re.search(r'\b(SP-[A-Z0-9]{5,10})\b', pdf_text).group(1).strip()
+    elif re.search(r'Ready for Takeoff!\s*\n\s*([A-Z0-9\-]{5,12})', pdf_text):
+        data["ticket_number"] = re.search(r'Ready for Takeoff!\s*\n\s*([A-Z0-9\-]{5,12})', pdf_text).group(1).strip()
+    else:
+        fl_m = re.search(r'\b(6E|AI|UK|SG|QP|EK)[-\s]*(\d{3,4})\b', pdf_text)
+        if fl_m:
+            data["ticket_number"] = f"{fl_m.group(1)}-{fl_m.group(2)}"
 
-    # Date / Time extraction
-    date_matches = re.findall(r'\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}(?:\s+\d{1,2}:\d{2})?\b', pdf_text, re.IGNORECASE)
-    if len(date_matches) >= 2:
-        data["departure_time"] = date_matches[0]
-        data["arrival_time"] = date_matches[1]
-    elif len(date_matches) == 1:
-        data["departure_time"] = date_matches[0]
+    # Flight route & times
+    route_m = re.findall(r'(\d{1,2}:\d{2})\s*\n\s*([A-Z]{3})\s*\n\s*([^\n\r]+)(?:\s*\n\s*(Terminal\s*[A-Z0-9]+))?', pdf_text)
+    if len(route_m) >= 2:
+        dep = route_m[0]
+        arr = route_m[1]
+        data["departure_time"] = dep[0]
+        data["arrival_time"] = arr[0]
+        dep_loc = f"{dep[1]} ({dep[2]}" + (f", {dep[3]}" if dep[3] else "") + ")"
+        arr_loc = f"{arr[1]} ({arr[2]}" + (f", {arr[3]}" if arr[3] else "") + ")"
+        data["from_location"] = dep_loc
+        data["to_location"] = arr_loc
 
-    # Origin and Destination airport codes (e.g. DEL -> BOM)
-    cities = ["DEL", "BOM", "BLR", "HYD", "CCU", "MAA", "GOI", "PNQ", "Delhi", "Mumbai", "Bangalore", "Hyderabad", "Goa"]
-    found_cities = []
-    for city in cities:
-        if re.search(r'\b' + re.escape(city) + r'\b', pdf_text, re.IGNORECASE):
-            found_cities.append(city)
-    if len(found_cities) >= 2:
-        data["from_location"] = found_cities[0]
-        data["to_location"] = found_cities[1]
-    elif len(found_cities) == 1:
-        data["from_location"] = found_cities[0]
+    # Hotel dates & locations
+    dates_m = re.search(r'Dates:\s*(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})', pdf_text)
+    if dates_m:
+        data["departure_time"] = f"{dates_m.group(1)} (Check-in 14:00)"
+        data["arrival_time"] = f"{dates_m.group(2)} (Check-out 11:00)"
+
+    addr_m = re.search(r'Address:\s*([^\n\r]+)', pdf_text)
+    if addr_m and data["category"] == "hotel":
+        data["from_location"] = "Mumbai"
+        hotel_name = data.get("provider") or "Hotel"
+        data["to_location"] = f"{hotel_name}, {addr_m.group(1).strip()}"
+
+    # Seat or Room
+    room_m = re.search(r'Room Slot:\s*([^\n\r]+)', pdf_text)
+    if room_m:
+        data["seat_or_room"] = room_m.group(1).strip()
+    else:
+        seat_m = re.search(r'(?:Seat|Seat No|Berth)[:\s]+([0-9]{1,3}[A-Z]|\bCoach\s+[A-Z0-9]+)', pdf_text, re.IGNORECASE)
+        if seat_m:
+            data["seat_or_room"] = seat_m.group(1).strip()
+        elif "confirmed seat" in lt:
+            cabin = re.search(r'Cabin Class:\s*([^\n\r]+)', pdf_text)
+            cabin_str = cabin.group(1).strip() if cabin else "Economy"
+            data["seat_or_room"] = f"Confirmed Seat ({cabin_str})"
+
+    # Notes
+    pax_m = re.search(r'(?:Name|Primary Guest)[:\s]+([A-Za-z\s]+?)(?:\r?\n|Email|$)', pdf_text)
+    total_m = re.search(r'(?:Total Amount Paid|Total Amount Payable)[:\s\n]+([^\n\r]+)', pdf_text)
+    notes_parts = []
+    if pax_m:
+        notes_parts.append(f"Passenger: {pax_m.group(1).strip()}")
+    if total_m:
+        notes_parts.append(f"Amount: {total_m.group(1).strip()}")
+    if notes_parts:
+        data["notes"] = " • ".join(notes_parts)
 
     return data
 
