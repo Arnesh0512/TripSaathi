@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { styles } from '../styles/appStyles';
 
-export default function MonitorScreen({ onViewImpact, onNavigateToAddTrip, onTriggerDelayAlert, isDelayAlertActive = true }) {
+export default function MonitorScreen({ onViewImpact, onNavigateToAddTrip, onTriggerDelayAlert, isDelayAlertActive = false }) {
   const [checking, setChecking] = useState(false);
   const [lastCheckedTime, setLastCheckedTime] = useState('Just now');
   const [activeCadenceTier, setActiveCadenceTier] = useState('IMMINENT'); // 'RELAXED' | 'HOURLY' | 'IMMINENT'

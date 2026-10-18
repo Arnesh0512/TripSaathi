@@ -119,20 +119,21 @@ def plan_new_trip(
 @router.get("/my-trips")
 def get_user_trips(current_user: Optional[dict] = Depends(get_optional_user)):
     """
-    Fetch all trips saved in TripSaathi MongoDB for the user (matching arnesh052006@gmail.com by default).
-    Returns current trip at top, followed by past completed trips.
+    Fetch all trips saved in TripSaathi MongoDB for the authenticated user.
+    If user is not signed in, returns empty list.
+    When signed in, queries specifically for that user's email/id.
     """
     try:
-        target_email = "arnesh052006@gmail.com"
-        if current_user and current_user.get("email"):
-            target_email = current_user["email"].lower()
-        
-        query_conditions = [
-            {"user_email": target_email},
-            {"user_email": "arnesh052006@gmail.com"},
-            {"user_email": "guest_traveler"}
-        ]
-        if current_user and current_user.get("user_id"):
+        if not current_user or not current_user.get("email"):
+            return {
+                "status": "SUCCESS",
+                "count": 0,
+                "trips": []
+            }
+
+        user_email = current_user["email"].lower()
+        query_conditions = [{"user_email": user_email}]
+        if current_user.get("user_id"):
             query_conditions.append({"user_id": current_user["user_id"]})
 
         query = {"$or": query_conditions}

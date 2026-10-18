@@ -38,7 +38,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('DASHBOARD'); // 'DASHBOARD' | 'ADD_TRIP' | 'MONITOR' | 'IMPACT' | 'RECOVERY'
-  const [hasDelayAlert, setHasDelayAlert] = useState(true);
+  const [hasDelayAlert, setHasDelayAlert] = useState(false);
   const [dashboardSubtab, setDashboardSubtab] = useState('Overview'); // 'Overview' | 'Updates' | 'Alerts'
   const [phoneFrameMode, setPhoneFrameMode] = useState(true); // Toggle phone frame vs full width on web
 
