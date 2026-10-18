@@ -94,4 +94,15 @@ export const tripApi = {
       headers,
     });
   },
+  parseTicketPdf: async (formData, jwtToken = null) => {
+    const headers = {};
+    if (jwtToken) {
+      headers.Authorization = `Bearer ${jwtToken}`;
+    }
+    return await callBackend('/trip/parse-ticket-pdf', {
+      method: 'POST',
+      headers,
+      body: formData,
+    }, 15000);
+  },
 };

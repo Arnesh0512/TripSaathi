@@ -1172,6 +1172,157 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
+  // Side-by-side Radio Button Group
+  radioGroupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F5F2EB',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+    cursor: 'pointer',
+  },
+  radioCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#9E9489',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  radioCircleActive: {
+    borderColor: THEME.primary,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: THEME.primary,
+  },
+  radioLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.textSecondary,
+  },
+  radioLabelActive: {
+    color: THEME.primary,
+    fontWeight: '700',
+  },
+
+  // Ticket Underline Form Fields (no box graphics)
+  ticketFieldGroup: {
+    marginBottom: 12,
+  },
+  ticketFieldLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  ticketUnderlineInput: {
+    width: '100%',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#C4BCB3',
+    backgroundColor: 'transparent',
+    paddingVertical: 5,
+    paddingHorizontal: 0,
+    fontSize: 13,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  ticketUnderlineInputWarning: {
+    borderBottomColor: '#D97706',
+  },
+
+  // Yellow warning badges for missing fields
+  missingWarningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  missingWarningText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+
+  // PDF Attachment Upload Zone
+  pdfUploadCard: {
+    borderWidth: 1.5,
+    borderColor: THEME.primaryBorder,
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#FAF7F2',
+    marginVertical: 8,
+  },
+  pdfUploadIcon: {
+    fontSize: 32,
+    marginBottom: 6,
+  },
+  pdfUploadTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: THEME.primary,
+    textAlign: 'center',
+  },
+  pdfUploadSubtitle: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    marginTop: 3,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  pdfUploadBtn: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: THEME.primary,
+    borderRadius: 6,
+  },
+  pdfUploadBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  pdfScanningCard: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#FDFCFB',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: THEME.borderDark,
+    marginVertical: 8,
+  },
+  pdfScanningText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.primary,
+    marginTop: 8,
+  },
+  pdfScanningSub: {
+    fontSize: 10,
+    color: THEME.textMuted,
+    marginTop: 3,
+  },
+
   // Add another ticket / leg button
   addAnotherDashedBtn: {
     borderWidth: 1,

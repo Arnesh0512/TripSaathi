@@ -14,11 +14,11 @@ import { THEME } from '../constants/theme';
 import { tripApi } from '../services/api';
 
 const TICKET_CATEGORIES = [
-  { id: 'flight', label: '✈️ Flight' },
-  { id: 'railway', label: '🚆 Train' },
-  { id: 'hotel', label: '🏨 Hotel' },
-  { id: 'cab', label: '🚕 Cab / Taxi' },
-  { id: 'bus', label: '🚌 Bus' },
+  { id: 'flight', label: 'Flight', icon: '✈️' },
+  { id: 'railway', label: 'Train', icon: '🚆' },
+  { id: 'hotel', label: 'Hotel', icon: '🏨' },
+  { id: 'cab', label: 'Cab', icon: '🚕' },
+  { id: 'bus', label: 'Bus', icon: '🚌' },
 ];
 
 const TRANSPORT_MODES = [
@@ -37,20 +37,25 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
   // ----------------------------------------------------
   // Option 1 State: Upload / Add Existing Booked Tickets
   // ----------------------------------------------------
-  const [existingTripName, setExistingTripName] = useState('My Upcoming Journey');
+  const [existingTripName, setExistingTripName] = useState('');
   const [tickets, setTickets] = useState([
     {
       id: 1,
       category: 'flight',
-      provider: 'IndiGo (6E-804)',
-      ticketNumber: '6E-PNR-883921',
-      fromLocation: 'DEL (Indira Gandhi T3)',
-      toLocation: 'BOM (Chhatrapati Shivaji T2)',
-      departureTime: '24 May 2025, 14:00',
-      arrivalTime: '24 May 2025, 16:30',
-      seatOrRoom: '14F (Window)',
-      documentName: 'indigo_ticket_booking.pdf',
+      entryMode: 'manual', // 'manual' | 'attachment'
+      provider: '',
+      ticketNumber: '',
+      fromLocation: '',
+      toLocation: '',
+      departureTime: '',
+      arrivalTime: '',
+      seatOrRoom: '',
+      documentName: '',
       notes: '',
+      isScanning: false,
+      scanError: null,
+      scanNotice: null,
+      missingFields: [],
     },
   ]);
 
@@ -61,22 +66,35 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
       {
         id: nextId,
         category: 'hotel',
-        provider: 'Taj Lands End, Mumbai',
-        ticketNumber: 'HTL-BOM-5412',
-        fromLocation: 'B.J. Road, Bandra West, Mumbai',
-        toLocation: 'B.J. Road, Bandra West, Mumbai',
-        departureTime: '24 May 2025, 17:30',
-        arrivalTime: '27 May 2025, 11:00',
-        seatOrRoom: 'Deluxe Sea View (Room 402)',
+        entryMode: 'manual',
+        provider: '',
+        ticketNumber: '',
+        fromLocation: '',
+        toLocation: '',
+        departureTime: '',
+        arrivalTime: '',
+        seatOrRoom: '',
         documentName: '',
         notes: '',
+        isScanning: false,
+        scanError: null,
+        scanNotice: null,
+        missingFields: [],
       },
     ]);
   };
 
   const handleUpdateTicket = (id, field, value) => {
-    setTickets(
-      tickets.map((t) => (t.id === id ? { ...t, [field]: value } : t))
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const updated = { ...t, [field]: value };
+        // If user fills in a missing field, automatically remove the warning mark
+        if (typeof value === 'string' && value.trim().length > 0 && t.missingFields?.includes(field)) {
+          updated.missingFields = t.missingFields.filter((f) => f !== field);
+        }
+        return updated;
+      })
     );
   };
 
@@ -85,20 +103,88 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
     setTickets(tickets.filter((t) => t.id !== id));
   };
 
-  const handleSimulateUpload = (id) => {
-    const sampleDocs = [
-      'e_ticket_boarding_pass.pdf',
-      'irctc_rail_ticket.pdf',
-      'hotel_booking_confirmation.pdf',
-      'uber_trip_receipt.pdf',
-    ];
-    const picked = sampleDocs[Math.floor(Math.random() * sampleDocs.length)];
-    handleUpdateTicket(id, 'documentName', picked);
+  // PDF Ticket Upload & AI Extraction Handler
+  const handlePickPdf = (ticketId) => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,application/pdf';
+      input.onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        await uploadAndScanPdf(ticketId, file);
+      };
+      input.click();
+    } else {
+      showAlert('Notice', 'PDF attachment scanning is optimized for web browser.');
+    }
+  };
+
+  const uploadAndScanPdf = async (ticketId, file) => {
+    handleUpdateTicket(ticketId, 'isScanning', true);
+    handleUpdateTicket(ticketId, 'scanError', null);
+    handleUpdateTicket(ticketId, 'scanNotice', null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await tripApi.parseTicketPdf(formData, token);
+      const result = await res.json();
+
+      if (res.ok && (result.status === 'SUCCESS' || result.status === 'PARTIAL')) {
+        const data = result.ticket_data || {};
+        const backendMissing = result.missing_fields || [];
+
+        // Map backend snake_case keys to camelCase ticket state
+        const fieldMap = {
+          provider: 'provider',
+          ticket_number: 'ticketNumber',
+          from_location: 'fromLocation',
+          to_location: 'toLocation',
+          departure_time: 'departureTime',
+          arrival_time: 'arrivalTime',
+          seat_or_room: 'seatOrRoom',
+        };
+        const missingKeys = backendMissing.map((f) => fieldMap[f] || f);
+
+        setTickets((prev) =>
+          prev.map((t) => {
+            if (t.id !== ticketId) return t;
+            return {
+              ...t,
+              category: data.category || t.category,
+              provider: data.provider || t.provider || '',
+              ticketNumber: data.ticket_number || t.ticketNumber || '',
+              fromLocation: data.from_location || t.fromLocation || '',
+              toLocation: data.to_location || t.toLocation || '',
+              departureTime: data.departure_time || t.departureTime || '',
+              arrivalTime: data.arrival_time || t.arrivalTime || '',
+              seatOrRoom: data.seat_or_room || t.seatOrRoom || '',
+              notes: data.notes || t.notes || '',
+              documentName: result.document_name || file.name,
+              missingFields: missingKeys,
+              entryMode: 'manual', // Switch to manual section as requested
+              isScanning: false,
+              scanNotice: missingKeys.length > 0
+                ? `Auto-filled via AI (${result.model_used || 'gpt-5-nano'}). Please review missing fields marked with ⚠️.`
+                : `All ticket details auto-filled via AI (${result.model_used || 'gpt-5-nano'})!`,
+            };
+          })
+        );
+      } else {
+        handleUpdateTicket(ticketId, 'isScanning', false);
+        handleUpdateTicket(ticketId, 'scanError', result.detail || 'Could not parse ticket PDF');
+      }
+    } catch (err) {
+      handleUpdateTicket(ticketId, 'isScanning', false);
+      handleUpdateTicket(ticketId, 'scanError', 'Upload failed: ' + err.message);
+    }
   };
 
   const handleSubmitExistingTrip = async () => {
     if (!existingTripName.trim()) {
-      showAlert('Notice', 'Please provide a trip name.');
+      showAlert('Notice', 'Please provide a trip reference name.');
       return;
     }
     setSaving(true);
@@ -334,162 +420,432 @@ export default function AddTripScreen({ token, onAddTripSuccess }) {
             </Text>
           </View>
 
-          {/* Trip Name */}
-          <View style={styles.formGroup}>
-            <Text style={styles.fieldKicker}>TRIP REFERENCE NAME</Text>
+          {/* Trip Name with clean underline input (no box graphics) */}
+          <View style={styles.ticketFieldGroup}>
+            <Text style={styles.underlineKicker}>TRIP REFERENCE NAME</Text>
             <TextInput
-              style={styles.cleanTextInput}
+              style={styles.ticketUnderlineInput}
               value={existingTripName}
               onChangeText={setExistingTripName}
-              placeholder="e.g. Mumbai Conference / Goa Vacation"
-              placeholderTextColor={THEME.textMuted}
+              placeholder="Type trip reference name (e.g. Mumbai Conference / Goa Vacation)"
+              placeholderTextColor="#C4BCB3"
             />
           </View>
 
           {/* Dynamic Tickets List */}
-          <Text style={[styles.fieldKicker, { marginTop: 6, marginBottom: 8 }]}>
+          <Text style={[styles.fieldKicker, { marginTop: 14, marginBottom: 8 }]}>
             CONFIRMED TICKETS ({tickets.length})
           </Text>
 
-          {tickets.map((t, index) => (
-            <View key={t.id} style={styles.ticketItemCard}>
-              <View style={styles.ticketItemHeader}>
-                <Text style={styles.ticketItemBadge}>TICKET #{index + 1}</Text>
-                {tickets.length > 1 && (
-                  <TouchableOpacity
-                    onPress={() => handleRemoveTicket(t.id)}
-                    style={styles.ticketRemoveBtn}
-                  >
-                    <Text style={styles.ticketRemoveBtnText}>✕ Remove</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+          {tickets.map((t, index) => {
+            const currentCat = TICKET_CATEGORIES.find((c) => c.id === t.category) || TICKET_CATEGORIES[0];
+            return (
+              <View key={t.id} style={styles.smartLegCard}>
+                {/* Header Strip */}
+                <View style={styles.smartLegCardHeader}>
+                  <View style={styles.smartLegBadgeRow}>
+                    <View style={styles.smartLegIndexPill}>
+                      <Text style={styles.smartLegIndexPillText}>
+                        TICKET #{String(index + 1).padStart(2, '0')}
+                      </Text>
+                    </View>
+                    <Text style={styles.smartLegTitleText}>
+                      {currentCat.icon} {currentCat.label} Details
+                    </Text>
+                  </View>
 
-              {/* Category Pills */}
-              <View style={styles.typePillRow}>
-                {TICKET_CATEGORIES.map((cat) => (
+                  {tickets.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => handleRemoveTicket(t.id)}
+                      style={styles.smartLegRemoveBtn}
+                    >
+                      <Text style={styles.smartLegRemoveText}>✕ Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Tactile Category Tiles (Flight, Train, Hotel, Cab, Bus) - Just like PlanMulti-Leg */}
+                <View style={styles.transportTilesRow}>
+                  {TICKET_CATEGORIES.map((cat) => {
+                    const isSelected = t.category === cat.id;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={[
+                          styles.transportTile,
+                          isSelected && styles.transportTileActive,
+                        ]}
+                        onPress={() => handleUpdateTicket(t.id, 'category', cat.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.transportTileIcon}>{cat.icon}</Text>
+                        <Text
+                          style={[
+                            styles.transportTileLabel,
+                            isSelected && styles.transportTileLabelActive,
+                          ]}
+                        >
+                          {cat.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Side-by-Side Radio Button Switcher: Manual Entry vs Attachment */}
+                <View style={styles.radioGroupRow}>
                   <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.typePill,
-                      t.category === cat.id && styles.typePillActive,
-                    ]}
-                    onPress={() => handleUpdateTicket(t.id, 'category', cat.id)}
+                    style={styles.radioOption}
+                    onPress={() => handleUpdateTicket(t.id, 'entryMode', 'manual')}
+                    activeOpacity={0.8}
                   >
-                    <Text
+                    <View
                       style={[
-                        styles.typePillText,
-                        t.category === cat.id && styles.typePillTextActive,
+                        styles.radioCircle,
+                        t.entryMode === 'manual' && styles.radioCircleActive,
                       ]}
                     >
-                      {cat.label}
+                      {t.entryMode === 'manual' && <View style={styles.radioDot} />}
+                    </View>
+                    <Text
+                      style={[
+                        styles.radioLabel,
+                        t.entryMode === 'manual' && styles.radioLabelActive,
+                      ]}
+                    >
+                      Manual Entry
                     </Text>
                   </TouchableOpacity>
-                ))}
-              </View>
 
-              {/* Provider & PNR */}
-              <View style={styles.formInputRow}>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>PROVIDER / CARRIER</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={t.provider}
-                    onChangeText={(val) => handleUpdateTicket(t.id, 'provider', val)}
-                    placeholder="e.g. IndiGo, IRCTC, Taj"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>PNR / BOOKING REF</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={t.ticketNumber}
-                    onChangeText={(val) => handleUpdateTicket(t.id, 'ticketNumber', val)}
-                    placeholder="e.g. 6E-883921"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-              </View>
-
-              {/* From & To */}
-              <View style={styles.formInputRow}>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>FROM / ORIGIN</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={t.fromLocation}
-                    onChangeText={(val) => handleUpdateTicket(t.id, 'fromLocation', val)}
-                    placeholder="DEL Airport / Station"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>TO / DESTINATION</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={t.toLocation}
-                    onChangeText={(val) => handleUpdateTicket(t.id, 'toLocation', val)}
-                    placeholder="BOM Airport / Hotel"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-              </View>
-
-              {/* Departure & Arrival */}
-              <View style={styles.formInputRow}>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>DEPARTURE / START</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={t.departureTime}
-                    onChangeText={(val) => handleUpdateTicket(t.id, 'departureTime', val)}
-                    placeholder="24 May 2025 14:00"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-                <View style={styles.formInputCol}>
-                  <Text style={styles.inputSmallLabel}>ARRIVAL / END</Text>
-                  <TextInput
-                    style={styles.cleanTextInput}
-                    value={t.arrivalTime}
-                    onChangeText={(val) => handleUpdateTicket(t.id, 'arrivalTime', val)}
-                    placeholder="24 May 2025 16:30"
-                    placeholderTextColor={THEME.textMuted}
-                  />
-                </View>
-              </View>
-
-              {/* Seat or Room */}
-              <View style={{ marginBottom: 6 }}>
-                <Text style={styles.inputSmallLabel}>SEAT / COACH / ROOM NUMBER</Text>
-                <TextInput
-                  style={styles.cleanTextInput}
-                  value={t.seatOrRoom}
-                  onChangeText={(val) => handleUpdateTicket(t.id, 'seatOrRoom', val)}
-                  placeholder="e.g. 14F (Window) / Room 402"
-                  placeholderTextColor={THEME.textMuted}
-                />
-              </View>
-
-              {/* Document upload / attachment */}
-              {t.documentName ? (
-                <View style={styles.attachedFileBadge}>
-                  <Text style={styles.attachedFileText}>📄 {t.documentName}</Text>
-                  <TouchableOpacity onPress={() => handleUpdateTicket(t.id, 'documentName', '')}>
-                    <Text style={{ color: '#B3261E', fontSize: 11, fontWeight: '700' }}>✕</Text>
+                  <TouchableOpacity
+                    style={styles.radioOption}
+                    onPress={() => handleUpdateTicket(t.id, 'entryMode', 'attachment')}
+                    activeOpacity={0.8}
+                  >
+                    <View
+                      style={[
+                        styles.radioCircle,
+                        t.entryMode === 'attachment' && styles.radioCircleActive,
+                      ]}
+                    >
+                      {t.entryMode === 'attachment' && <View style={styles.radioDot} />}
+                    </View>
+                    <Text
+                      style={[
+                        styles.radioLabel,
+                        t.entryMode === 'attachment' && styles.radioLabelActive,
+                      ]}
+                    >
+                      Attachment (PDF Auto-Scan)
+                    </Text>
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.attachBtn}
-                  onPress={() => handleSimulateUpload(t.id)}
-                >
-                  <Text style={styles.attachBtnText}>📎 Attach Ticket PDF / Image</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
+
+                {/* ATTACHMENT VIEW: PDF Upload Zone */}
+                {t.entryMode === 'attachment' && (
+                  <View style={{ paddingHorizontal: 4 }}>
+                    {t.isScanning ? (
+                      <View style={styles.pdfScanningCard}>
+                        <ActivityIndicator size="large" color={THEME.primary} />
+                        <Text style={styles.pdfScanningText}>
+                          Scanning ticket with AI (gpt-5-nano)...
+                        </Text>
+                        <Text style={styles.pdfScanningSub}>
+                          Extracting text with pypdf and structuring fields with GPT
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.pdfUploadCard}>
+                        <Text style={styles.pdfUploadIcon}>📄</Text>
+                        <Text style={styles.pdfUploadTitle}>
+                          Upload Confirmed Ticket (PDF)
+                        </Text>
+                        <Text style={styles.pdfUploadSubtitle}>
+                          Select your airline boarding pass, IRCTC railway ticket, or hotel voucher PDF.
+                          TripSaathi AI will automatically extract details and populate manual fields.
+                        </Text>
+
+                        {t.scanError && (
+                          <View
+                            style={{
+                              backgroundColor: '#FEE2E2',
+                              padding: 8,
+                              borderRadius: 6,
+                              marginTop: 8,
+                              borderWidth: 1,
+                              borderColor: '#EF4444',
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, color: '#B91C1C', textAlign: 'center' }}>
+                              ⚠️ {t.scanError}
+                            </Text>
+                          </View>
+                        )}
+
+                        <TouchableOpacity
+                          style={styles.pdfUploadBtn}
+                          onPress={() => handlePickPdf(t.id)}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={styles.pdfUploadBtnText}>
+                            📁 Choose & Scan Ticket PDF
+                          </Text>
+                        </TouchableOpacity>
+
+                        {t.documentName ? (
+                          <View style={[styles.attachedFileBadge, { marginTop: 12, width: '100%' }]}>
+                            <Text style={styles.attachedFileText}>
+                              📄 Already attached: {t.documentName}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => handleUpdateTicket(t.id, 'entryMode', 'manual')}
+                            >
+                              <Text style={{ color: THEME.primary, fontSize: 11, fontWeight: '700' }}>
+                                View Fields →
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : null}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* MANUAL VIEW: Underline input fields with Yellow Exclamation for missing fields */}
+                {t.entryMode === 'manual' && (
+                  <View style={{ paddingHorizontal: 4 }}>
+                    {/* Scan Notice banner if populated by AI */}
+                    {t.scanNotice && (
+                      <View
+                        style={{
+                          backgroundColor: t.missingFields.length > 0 ? '#FFFBEB' : '#ECFDF5',
+                          borderWidth: 1,
+                          borderColor: t.missingFields.length > 0 ? '#F59E0B' : '#10B981',
+                          borderRadius: 8,
+                          padding: 8,
+                          marginBottom: 12,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: t.missingFields.length > 0 ? '#B45309' : '#047857',
+                          }}
+                        >
+                          {t.scanNotice}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Attached file status tag */}
+                    {t.documentName ? (
+                      <View style={[styles.attachedFileBadge, { marginBottom: 12 }]}>
+                        <Text style={styles.attachedFileText}>
+                          📄 Scanned Document: {t.documentName}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            handleUpdateTicket(t.id, 'documentName', '');
+                            handleUpdateTicket(t.id, 'scanNotice', null);
+                          }}
+                        >
+                          <Text style={{ color: '#B3261E', fontSize: 11, fontWeight: '700' }}>✕ Clear</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+
+                    {/* Provider & Ticket/PNR Row */}
+                    <View style={styles.formInputRow}>
+                      <View style={styles.formInputCol}>
+                        <View style={styles.ticketFieldLabelRow}>
+                          <Text style={styles.underlineKicker}>
+                            {t.category === 'hotel' ? 'HOTEL / BRAND' : 'PROVIDER / CARRIER'}
+                          </Text>
+                          {t.missingFields.includes('provider') && (
+                            <View style={styles.missingWarningBadge}>
+                              <Text style={styles.missingWarningText}>⚠️ Missing</Text>
+                            </View>
+                          )}
+                        </View>
+                        <TextInput
+                          style={[
+                            styles.ticketUnderlineInput,
+                            t.missingFields.includes('provider') && styles.ticketUnderlineInputWarning,
+                          ]}
+                          value={t.provider}
+                          onChangeText={(val) => handleUpdateTicket(t.id, 'provider', val)}
+                          placeholder={
+                            t.category === 'hotel' ? 'Taj, Marriott, etc.' : 'IndiGo, IRCTC, etc.'
+                          }
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
+
+                      <View style={styles.formInputCol}>
+                        <View style={styles.ticketFieldLabelRow}>
+                          <Text style={styles.underlineKicker}>
+                            {t.category === 'hotel' ? 'BOOKING CONFIRMATION' : 'PNR / TICKET NUMBER'}
+                          </Text>
+                          {t.missingFields.includes('ticketNumber') && (
+                            <View style={styles.missingWarningBadge}>
+                              <Text style={styles.missingWarningText}>⚠️ Missing</Text>
+                            </View>
+                          )}
+                        </View>
+                        <TextInput
+                          style={[
+                            styles.ticketUnderlineInput,
+                            t.missingFields.includes('ticketNumber') && styles.ticketUnderlineInputWarning,
+                          ]}
+                          value={t.ticketNumber}
+                          onChangeText={(val) => handleUpdateTicket(t.id, 'ticketNumber', val)}
+                          placeholder="e.g. 6E-XY9821 / HTL-5412"
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
+                    </View>
+
+                    {/* From & To Row */}
+                    <View style={styles.formInputRow}>
+                      <View style={styles.formInputCol}>
+                        <View style={styles.ticketFieldLabelRow}>
+                          <Text style={styles.underlineKicker}>
+                            {t.category === 'hotel' ? 'CITY / LOCATION' : 'FROM / ORIGIN'}
+                          </Text>
+                          {t.missingFields.includes('fromLocation') && (
+                            <View style={styles.missingWarningBadge}>
+                              <Text style={styles.missingWarningText}>⚠️ Missing</Text>
+                            </View>
+                          )}
+                        </View>
+                        <TextInput
+                          style={[
+                            styles.ticketUnderlineInput,
+                            t.missingFields.includes('fromLocation') && styles.ticketUnderlineInputWarning,
+                          ]}
+                          value={t.fromLocation}
+                          onChangeText={(val) => handleUpdateTicket(t.id, 'fromLocation', val)}
+                          placeholder="Departure origin location"
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
+
+                      <View style={styles.formInputCol}>
+                        <View style={styles.ticketFieldLabelRow}>
+                          <Text style={styles.underlineKicker}>
+                            {t.category === 'hotel' ? 'HOTEL ADDRESS' : 'TO / DESTINATION'}
+                          </Text>
+                          {t.missingFields.includes('toLocation') && (
+                            <View style={styles.missingWarningBadge}>
+                              <Text style={styles.missingWarningText}>⚠️ Missing</Text>
+                            </View>
+                          )}
+                        </View>
+                        <TextInput
+                          style={[
+                            styles.ticketUnderlineInput,
+                            t.missingFields.includes('toLocation') && styles.ticketUnderlineInputWarning,
+                          ]}
+                          value={t.toLocation}
+                          onChangeText={(val) => handleUpdateTicket(t.id, 'toLocation', val)}
+                          placeholder="Arrival destination location"
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
+                    </View>
+
+                    {/* Departure & Arrival Row */}
+                    <View style={styles.formInputRow}>
+                      <View style={styles.formInputCol}>
+                        <View style={styles.ticketFieldLabelRow}>
+                          <Text style={styles.underlineKicker}>
+                            {t.category === 'hotel' ? 'CHECK-IN DATE & TIME' : 'DEPARTURE TIME'}
+                          </Text>
+                          {t.missingFields.includes('departureTime') && (
+                            <View style={styles.missingWarningBadge}>
+                              <Text style={styles.missingWarningText}>⚠️ Missing</Text>
+                            </View>
+                          )}
+                        </View>
+                        <TextInput
+                          style={[
+                            styles.ticketUnderlineInput,
+                            t.missingFields.includes('departureTime') && styles.ticketUnderlineInputWarning,
+                          ]}
+                          value={t.departureTime}
+                          onChangeText={(val) => handleUpdateTicket(t.id, 'departureTime', val)}
+                          placeholder="e.g. 24 May 2025, 14:00"
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
+
+                      <View style={styles.formInputCol}>
+                        <View style={styles.ticketFieldLabelRow}>
+                          <Text style={styles.underlineKicker}>
+                            {t.category === 'hotel' ? 'CHECK-OUT DATE & TIME' : 'ARRIVAL TIME'}
+                          </Text>
+                          {t.missingFields.includes('arrivalTime') && (
+                            <View style={styles.missingWarningBadge}>
+                              <Text style={styles.missingWarningText}>⚠️ Missing</Text>
+                            </View>
+                          )}
+                        </View>
+                        <TextInput
+                          style={[
+                            styles.ticketUnderlineInput,
+                            t.missingFields.includes('arrivalTime') && styles.ticketUnderlineInputWarning,
+                          ]}
+                          value={t.arrivalTime}
+                          onChangeText={(val) => handleUpdateTicket(t.id, 'arrivalTime', val)}
+                          placeholder="e.g. 24 May 2025, 16:30"
+                          placeholderTextColor="#C4BCB3"
+                        />
+                      </View>
+                    </View>
+
+                    {/* Seat or Room */}
+                    <View style={styles.ticketFieldGroup}>
+                      <View style={styles.ticketFieldLabelRow}>
+                        <Text style={styles.underlineKicker}>
+                          {t.category === 'hotel'
+                            ? 'ROOM TYPE / ROOM NUMBER'
+                            : 'SEAT / COACH / BERTH NUMBER'}
+                        </Text>
+                        {t.missingFields.includes('seatOrRoom') && (
+                          <View style={styles.missingWarningBadge}>
+                            <Text style={styles.missingWarningText}>⚠️ Missing</Text>
+                          </View>
+                        )}
+                      </View>
+                      <TextInput
+                        style={[
+                          styles.ticketUnderlineInput,
+                          t.missingFields.includes('seatOrRoom') && styles.ticketUnderlineInputWarning,
+                        ]}
+                        value={t.seatOrRoom}
+                        onChangeText={(val) => handleUpdateTicket(t.id, 'seatOrRoom', val)}
+                        placeholder="e.g. 14F (Window) / Coach B2 Seat 45 / Room 402"
+                        placeholderTextColor="#C4BCB3"
+                      />
+                    </View>
+
+                    {/* Additional Notes (Optional) */}
+                    <View style={styles.ticketFieldGroup}>
+                      <Text style={styles.underlineKicker}>PASSENGER / ADDITIONAL NOTES (OPTIONAL)</Text>
+                      <TextInput
+                        style={styles.ticketUnderlineInput}
+                        value={t.notes}
+                        onChangeText={(val) => handleUpdateTicket(t.id, 'notes', val)}
+                        placeholder="e.g. Passenger names, terminal, gate, baggage details"
+                        placeholderTextColor="#C4BCB3"
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
+            );
+          })}
 
           {/* Add Another Ticket Button */}
           <TouchableOpacity

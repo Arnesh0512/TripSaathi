@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from bson import ObjectId
 from typing import Optional
@@ -7,6 +7,7 @@ from verify.token import verify_access_token
 from verify.user import verify_user_payload
 from schemas.trip import ExistingTripCreate, PlanTripCreate
 from utils.time import generate_timestamp
+from services.ticket_parser import extract_text_from_pdf, parse_ticket_with_gpt
 
 security = HTTPBearer(auto_error=False)
 
@@ -152,3 +153,62 @@ def get_trip_detail(trip_id: str):
         return doc
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid trip id or query error: {str(e)}")
+
+@router.post("/parse-ticket-pdf")
+async def parse_ticket_pdf(
+    file: UploadFile = File(...),
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
+    """
+    Accepts an uploaded PDF ticket / boarding pass.
+    Uses pypdf to extract text, sends it to configured LLM (gpt-5-nano),
+    and returns parsed ticket dictionary along with any missing_fields.
+    """
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported for ticket scanning.")
+
+    try:
+        contents = await file.read()
+        if len(contents) == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+        pdf_text = extract_text_from_pdf(contents)
+        if not pdf_text.strip():
+            return {
+                "status": "PARTIAL",
+                "message": "No selectable text found in PDF. Please enter details manually.",
+                "document_name": file.filename,
+                "ticket_data": {
+                    "category": "flight",
+                    "provider": None,
+                    "ticket_number": None,
+                    "from_location": None,
+                    "to_location": None,
+                    "departure_time": None,
+                    "arrival_time": None,
+                    "seat_or_room": None,
+                    "notes": f"Scanned from {file.filename} (image-only/empty)",
+                },
+                "missing_fields": [
+                    "provider", "ticket_number", "from_location", 
+                    "to_location", "departure_time", "arrival_time", "seat_or_room"
+                ],
+                "model_used": "none (empty text)",
+            }
+
+        ticket_data, missing_fields, model_used = parse_ticket_with_gpt(pdf_text)
+
+        return {
+            "status": "SUCCESS",
+            "message": f"Successfully parsed {file.filename} using {model_used}",
+            "document_name": file.filename,
+            "extracted_text_preview": pdf_text[:300].strip(),
+            "ticket_data": ticket_data,
+            "missing_fields": missing_fields,
+            "model_used": model_used
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse ticket PDF: {str(e)}")
