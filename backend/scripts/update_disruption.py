@@ -20,7 +20,7 @@ doc = {
                 "category": "flight",
                 "icon": "✈️",
                 "title": "AirIndia SP-952 (DEL → BOM)",
-                "portal": "demo-arilines.vercel.app",
+                "portal": "sky-airlines.vercel.app",
                 "status_badge": "DELAYED +2h 15m",
                 "status_badge_normal": "ON TIME",
                 "pnr": "SP-952 • PNR-DEL-882",

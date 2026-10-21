@@ -262,7 +262,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
             departureTime: '19 Oct 2026, 17:00',
             arrivalTime: '19 Oct 2026, 23:00',
             estimatedBudget: '20,000',
-            preferredServiceUrl: 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa',
+            preferredServiceUrl: 'https://sky-airlines.vercel.app/book/6ad4cc79c65e09cefda30aaa',
             notes: '',
           },
         ]
@@ -317,7 +317,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
           departureTime: '19 Oct 2026, 17:00',
           arrivalTime: '19 Oct 2026, 23:00',
           estimatedBudget: '20,000',
-          preferredServiceUrl: 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa',
+          preferredServiceUrl: 'https://sky-airlines.vercel.app/book/6ad4cc79c65e09cefda30aaa',
           notes: '',
         },
       ]);
@@ -394,7 +394,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
     setLoadingStepText('TinyFish finding best route within budget...');
 
     const t1 = setTimeout(() => {
-      setLoadingStepText('Scraping flight availability & pricing on demo-arilines.vercel.app...');
+      setLoadingStepText('Scraping flight availability & pricing on sky-airlines.vercel.app...');
     }, isArnesh ? 8000 : 850);
 
     const t2 = setTimeout(() => {
@@ -458,14 +458,17 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
 
   const getLegAutofillUrl = (leg) => {
     if (leg.mode === 'airplane') {
-      return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+      return 'https://sky-airlines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
     }
     if (isArnesh && (leg.mode === 'airplane' || !leg.mode)) {
-      return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+      return 'https://sky-airlines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
     }
     if (leg.preferredServiceUrl && leg.preferredServiceUrl.trim().length > 0) {
-      if (leg.preferredServiceUrl.includes('demo-arilines.vercel.app')) {
-        return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+      if (
+        leg.preferredServiceUrl.includes('sky-airlines.vercel.app') ||
+        leg.preferredServiceUrl.includes('demo-arilines.vercel.app')
+      ) {
+        return 'https://sky-airlines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
       }
       return leg.preferredServiceUrl.trim();
     }
@@ -478,7 +481,7 @@ export default function AddTripScreen({ token, user, onAddTripSuccess }) {
     if (leg.mode === 'train') {
       return `https://www.irctc.co.in/nget/train-search`;
     }
-    return 'https://demo-arilines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
+    return 'https://sky-airlines.vercel.app/book/6ad4cc79c65e09cefda30aaa';
   };
 
   const getHotelAutofillUrl = () => {
